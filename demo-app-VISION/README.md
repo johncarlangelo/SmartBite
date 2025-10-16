@@ -13,6 +13,18 @@ A Next.js template for building computer vision applications with AI-powered ima
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+Before running the application, you need to have Ollama installed and running with the llava:7b model:
+
+1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com)
+2. **Pull the vision model**:
+   ```bash
+   ollama pull llava:7b
+   ```
+3. **Start Ollama**: Make sure Ollama is running (usually starts automatically after installation)
+4. **Verify installation**: Test with `ollama list` to see available models
+
 ### Installation
 
 1. Navigate to the nextjs-app directory:
@@ -68,13 +80,22 @@ The upload interface provides:
 
 ## 🤖 AI Integration
 
-The template includes an image analysis API endpoint at `/api/analyze-image` for:
+The template includes an image analysis API endpoint at `/api/analyze-image` powered by **Ollama** with the **llava:7b** model for:
 
 - Object detection and recognition
 - Scene understanding
 - Content description
 - Visual feature extraction
 - Custom vision tasks
+
+### Ollama Setup
+
+This application uses Ollama with the llava:7b model for local AI-powered image analysis:
+
+1. **Install Ollama**: Download from [ollama.com](https://ollama.com)
+2. **Pull the model**: Run `ollama pull llava:7b`
+3. **Start Ollama**: Ensure Ollama is running locally on port 11434
+4. **Model Configuration**: The app is configured to use the llava:7b model
 
 ### Analysis Workflow
 
@@ -104,6 +125,8 @@ The template includes an image analysis API endpoint at `/api/analyze-image` for
 - **Next.js 14** - React framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first CSS
+- **Ollama** - Local AI model runtime
+- **llava:7b** - Vision-language model for image analysis
 - **File API** - Browser file handling
 - **FileReader API** - Image preview
 - **Lucide React** - Beautiful icons

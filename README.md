@@ -9,7 +9,7 @@ Project is based on the VISION-TRACK template located at `demo-app-VISION/nextjs
 ### Prerequisites
 - Node.js 18+
 - Ollama running locally (`ollama serve`)
-- A vision-capable model (e.g., `ollama pull llama3.2-vision`)
+- A vision-capable model (e.g., `ollama pull llava:7b`)
 
 ### Run
 ```bash
