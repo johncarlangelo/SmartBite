@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState, useEffect } from 'react'
-import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun } from 'lucide-react'
+import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X } from 'lucide-react'
 
 type Nutrition = {
   calories: number
@@ -23,6 +23,12 @@ type AnalysisResult = {
   }
 }
 
+type SavedAnalysis = AnalysisResult & {
+  id: string
+  savedAt: string
+  imageUrl: string
+}
+
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [fileObj, setFileObj] = useState<File | null>(null)
@@ -31,12 +37,23 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [offline, setOffline] = useState(true)
   const [darkMode, setDarkMode] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const [analysisStage, setAnalysisStage] = useState('')
+  const [savedSuccess, setSavedSuccess] = useState(false)
+  const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
+  const [showHistory, setShowHistory] = useState(false)
 
   // Load theme preference from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
       setDarkMode(savedTheme === 'dark')
+    }
+    
+    // Load saved analyses
+    const saved = localStorage.getItem('savedAnalyses')
+    if (saved) {
+      setSavedAnalyses(JSON.parse(saved))
     }
   }, [])
 
@@ -79,10 +96,47 @@ export default function Home() {
     e.preventDefault()
   }
 
+  // ADDED: Progress simulation effect
+  useEffect(() => {
+    if (!isAnalyzing) {
+      setProgress(0)
+      setAnalysisStage('')
+      return
+    }
+
+    const stages = [
+      { progress: 20, stage: 'Processing image...', duration: 1000 },
+      { progress: 40, stage: 'Identifying dish...', duration: 2000 },
+      { progress: 60, stage: 'Analyzing ingredients...', duration: 2000 },
+      { progress: 80, stage: 'Calculating nutrition...', duration: 1500 },
+      { progress: 95, stage: 'Generating recipe...', duration: 1000 },
+    ]
+
+    let currentStageIndex = 0
+    let timeoutId: NodeJS.Timeout
+
+    const advanceStage = () => {
+      if (currentStageIndex < stages.length) {
+        const { progress, stage, duration } = stages[currentStageIndex]
+        setProgress(progress)
+        setAnalysisStage(stage)
+        currentStageIndex++
+        timeoutId = setTimeout(advanceStage, duration)
+      }
+    }
+
+    advanceStage()
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [isAnalyzing])
+
   const analyzeImage = async () => {
     if (!fileObj) return
     setIsAnalyzing(true)
     setError(null)
+    setProgress(0)
     try {
       const form = new FormData()
       form.append('image', fileObj)
@@ -93,12 +147,53 @@ export default function Home() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to analyze image')
-      setResult(data as AnalysisResult)
+      // ADDED: Complete progress before showing results
+      setProgress(100)
+      setAnalysisStage('Complete!')
+      setTimeout(() => {
+        setResult(data as AnalysisResult)
+      }, 500)
     } catch (err: any) {
       setError(err?.message || 'Error analyzing image. Please try again.')
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const saveAnalysis = () => {
+    if (!result || !selectedImage) return
+    
+    const newSave: SavedAnalysis = {
+      ...result,
+      id: Date.now().toString(),
+      savedAt: new Date().toISOString(),
+      imageUrl: selectedImage
+    }
+    
+    const updated = [newSave, ...savedAnalyses]
+    setSavedAnalyses(updated)
+    localStorage.setItem('savedAnalyses', JSON.stringify(updated))
+    
+    setSavedSuccess(true)
+    setTimeout(() => setSavedSuccess(false), 3000)
+  }
+
+  const loadSavedAnalysis = (saved: SavedAnalysis) => {
+    setSelectedImage(saved.imageUrl)
+    setResult({
+      dishName: saved.dishName,
+      cuisineType: saved.cuisineType,
+      ingredients: saved.ingredients,
+      nutrition: saved.nutrition,
+      recipe: saved.recipe
+    })
+    setShowHistory(false)
+  }
+
+  const deleteSavedAnalysis = (id: string) => {
+    const updated = savedAnalyses.filter(s => s.id !== id)
+    setSavedAnalyses(updated)
+    localStorage.setItem('savedAnalyses', JSON.stringify(updated))
   }
 
   const headerTitle = useMemo(() => '🍽️ SmartBite', [])
@@ -126,13 +221,27 @@ export default function Home() {
         <div className={`text-center mb-10 sm:mb-12 ${textClass}`}>
           <div className="flex items-center justify-center gap-4 mb-4">
             <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">{headerTitle}</h1>
-            <button
-              onClick={toggleTheme}
-              className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all`}
-              aria-label="Toggle theme"
-            >
-              {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-700" />}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all relative`}
+                aria-label="View history"
+              >
+                <History size={24} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
+                {savedAnalyses.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {savedAnalyses.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={toggleTheme}
+                className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all`}
+                aria-label="Toggle theme"
+              >
+                {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-700" />}
+              </button>
+            </div>
           </div>
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
@@ -193,7 +302,7 @@ export default function Home() {
                 />
               </label>
 
-              {selectedImage && (
+              {selectedImage && !result && (
                 <button
                   onClick={analyzeImage}
                   disabled={isAnalyzing}
@@ -201,6 +310,21 @@ export default function Home() {
                 >
                   <Eye size={22} />
                   <span className="text-lg">{isAnalyzing ? 'Analyzing...' : 'Analyze Image'}</span>
+                </button>
+              )}
+
+              {result && (
+                <button
+                  onClick={() => {
+                    setSelectedImage(null)
+                    setFileObj(null)
+                    setResult(null)
+                    setError(null)
+                  }}
+                  className={`w-full flex items-center justify-center gap-3 ${buttonPrimaryClass} px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                >
+                  <Upload size={22} />
+                  <span className="text-lg">Upload Another Dish</span>
                 </button>
               )}
 
@@ -225,80 +349,135 @@ export default function Home() {
               </div>
             )}
 
+            {/* MODIFIED: Enhanced analyzing state with progress bar */}
             {isAnalyzing && (
-              <div className={`text-center ${textClass} py-16 animate-pulse`}>
-                <Eye className="mx-auto mb-4" size={56} />
-                <p className="text-xl font-medium">Analyzing your dish...</p>
+              <div className={`text-center ${textClass} py-12`}>
+                <div className="relative inline-block mb-6">
+                  <Eye className="mx-auto animate-pulse" size={64} />
+                  <div className={`absolute -bottom-2 -right-2 ${darkMode ? 'bg-blue-500' : 'bg-blue-600'} text-white text-xs font-bold px-2 py-1 rounded-full`}>
+                    {progress}%
+                  </div>
+                </div>
+                
+                <p className="text-xl font-bold mb-2">{analysisStage || 'Starting analysis...'}</p>
+                <p className={`text-sm ${textSecondaryClass} mb-6`}>Estimated time: ~8 seconds</p>
+                
+                {/* Progress Bar */}
+                <div className={`w-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'} rounded-full h-3 overflow-hidden shadow-inner`}>
+                  <div 
+                    className={`h-full ${darkMode ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-blue-400 to-blue-500'} rounded-full transition-all duration-500 ease-out relative`}
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+                
+                {/* Analysis Steps Indicator */}
+                <div className="mt-8 flex justify-center gap-2">
+                  {[20, 40, 60, 80, 95].map((step, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        progress >= step
+                          ? darkMode ? 'bg-blue-500 scale-110' : 'bg-blue-600 scale-110'
+                          : darkMode ? 'bg-slate-600' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
             {result && (
-              <div className="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-                {/* Dish Overview */}
-                <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                  <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                    <Salad size={20} />
-                    <h3 className="text-lg font-bold">Dish Overview</h3>
-                  </div>
-                  <p className={`${textClass} text-2xl font-bold mb-1`}>{result.dishName}</p>
-                  <p className={textSecondaryClass}>Cuisine: <span className="font-medium">{result.cuisineType}</span></p>
-                </section>
+              <>
+                <button
+                  onClick={saveAnalysis}
+                  className={`w-full flex items-center justify-center gap-3 mb-5 ${
+                    savedSuccess 
+                      ? darkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'
+                      : buttonPrimaryClass
+                  } px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                >
+                  {savedSuccess ? (
+                    <>
+                      <Save size={20} />
+                      <span>Saved to History!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      <span>Save to History</span>
+                    </>
+                  )}
+                </button>
 
-                {/* Ingredients */}
-                <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                  <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                    <Salad size={20} />
-                    <h3 className="text-lg font-bold">Ingredients</h3>
-                  </div>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {result.ingredients.map((ing, idx) => (
-                      <li key={idx} className={`${textSecondaryClass} font-medium`}>• {ing}</li>
-                    ))}
-                  </ul>
-                </section>
+                <div className="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                  {/* Dish Overview */}
+                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                      <Salad size={20} />
+                      <h3 className="text-lg font-bold">Dish Overview</h3>
+                    </div>
+                    <p className={`${textClass} text-2xl font-bold mb-1`}>{result.dishName}</p>
+                    <p className={textSecondaryClass}>Cuisine: <span className="font-medium">{result.cuisineType}</span></p>
+                  </section>
 
-                {/* Nutrition */}
-                <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                  <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                    <Gauge size={20} />
-                    <h3 className="text-lg font-bold">Nutritional Facts</h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                      <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.calories)}</div>
-                      <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Calories</div>
+                  {/* Ingredients */}
+                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                      <Salad size={20} />
+                      <h3 className="text-lg font-bold">Ingredients</h3>
                     </div>
-                    <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                      <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.protein_g)}g</div>
-                      <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Protein</div>
-                    </div>
-                    <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                      <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.carbs_g)}g</div>
-                      <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Carbs</div>
-                    </div>
-                    <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                      <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.fat_g)}g</div>
-                      <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Fat</div>
-                    </div>
-                  </div>
-                </section>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {result.ingredients.map((ing, idx) => (
+                        <li key={idx} className={`${textSecondaryClass} font-medium`}>• {ing}</li>
+                      ))}
+                    </ul>
+                  </section>
 
-                {/* Recipe */}
-                <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                  <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                    <ChefHat size={20} />
-                    <h3 className="text-lg font-bold">Recipe Guide</h3>
-                  </div>
-                  <p className={`${textSecondaryClass} mb-3 font-medium`}>
-                    Servings: {result.recipe.servings} • Prep: {result.recipe.prepMinutes}m • Cook: {result.recipe.cookMinutes}m
-                  </p>
-                  <ol className={`list-decimal list-inside space-y-2 ${textSecondaryClass}`}>
-                    {result.recipe.steps.map((step, idx) => (
-                      <li key={idx} className="leading-relaxed">{step}</li>
-                    ))}
-                  </ol>
-                </section>
-              </div>
+                  {/* Nutrition */}
+                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                      <Gauge size={20} />
+                      <h3 className="text-lg font-bold">Nutritional Facts</h3>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.calories)}</div>
+                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Calories</div>
+                      </div>
+                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.protein_g)}g</div>
+                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Protein</div>
+                      </div>
+                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.carbs_g)}g</div>
+                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Carbs</div>
+                      </div>
+                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.fat_g)}g</div>
+                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Fat</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Recipe */}
+                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                      <ChefHat size={20} />
+                      <h3 className="text-lg font-bold">Recipe Guide</h3>
+                    </div>
+                    <p className={`${textSecondaryClass} mb-3 font-medium`}>
+                      Servings: {result.recipe.servings} • Prep: {result.recipe.prepMinutes}m • Cook: {result.recipe.cookMinutes}m
+                    </p>
+                    <ol className={`list-decimal list-inside space-y-2 ${textSecondaryClass}`}>
+                      {result.recipe.steps.map((step, idx) => (
+                        <li key={idx} className="leading-relaxed">{step}</li>
+                      ))}
+                    </ol>
+                  </section>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -311,6 +490,73 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${textClass} flex items-center gap-2`}>
+                <History size={28} />
+                Saved Analyses ({savedAnalyses.length})
+              </h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <X size={24} className={textClass} />
+              </button>
+            </div>
+
+            {savedAnalyses.length === 0 ? (
+              <div className={`text-center ${textSecondaryClass} py-12`}>
+                <History size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No saved analyses yet. Analyze a dish and save it!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {savedAnalyses.map((saved) => (
+                  <div
+                    key={saved.id}
+                    className={`${darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'} rounded-xl p-4 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} transition-all cursor-pointer group`}
+                  >
+                    <div className="flex gap-4">
+                      <img
+                        src={saved.imageUrl}
+                        alt={saved.dishName}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <h3 className={`${textClass} font-bold mb-1`}>{saved.dishName}</h3>
+                        <p className={`${textSecondaryClass} text-sm mb-2`}>
+                          {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => loadSavedAnalysis(saved)}
+                            className={`text-sm px-3 py-1 rounded-lg ${buttonPrimaryClass} transition-all`}
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteSavedAnalysis(saved.id)
+                            }}
+                            className={`text-sm px-3 py-1 rounded-lg ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
