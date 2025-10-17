@@ -315,11 +315,11 @@ export default function Home() {
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Upload Panel */}
           <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className={`text-2xl font-bold ${textClass}`}>Upload Dish Photo</h2>
+              <h2 className={`text-[20px] font-bold ${textClass}`}>Upload Dish Photo</h2>
               <button
                 onClick={() => setOffline((v) => !v)}
                 className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm ${
@@ -330,7 +330,7 @@ export default function Home() {
                 title={offline ? 'Using local Ollama model' : 'Using online model'}
               >
                 {offline ? <WifiOff size={18} /> : <Wifi size={18} />}
-                <span className="hidden sm:inline">{offline ? 'Offline Mode' : 'Online Mode'}</span>
+                <span className="hidden text-sm sm:inline">{offline ? 'Offline Mode' : 'Online Mode'}</span>
               </button>
             </div>
 
@@ -422,8 +422,8 @@ export default function Home() {
           </div>
 
           {/* Results Panel */}
-          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
-            <h2 className={`text-2xl font-bold ${textClass} mb-6`}>Results</h2>
+          <div className={`${cardClass} lg:col-span-2 rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
+            <h2 className={`text-[20px] font-bold ${textClass} mb-6`}>Results</h2>
 
             {!result && !isAnalyzing && !error && (
               <div className={`text-center ${textSecondaryClass} py-16`}>
@@ -445,7 +445,7 @@ export default function Home() {
                 </div>
                 
                 <p className="text-xl font-bold mb-2">{analysisStage || 'Starting analysis...'}</p>
-                <p className={`text-sm ${textSecondaryClass} mb-6`}>Estimated time: ~8 seconds</p>
+                <p className={`text-sm ${textSecondaryClass} mb-6`}>Estimated time: ~20 seconds</p>
                 
                 {/* Progress Bar */}
                 <div className={`w-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'} rounded-full h-3 overflow-hidden shadow-inner`}>
@@ -493,7 +493,7 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-5 max-h-[550px] overflow-y-auto custom-scrollbar pr-2">
                   {/* Dish Overview */}
                   <AnimatedSection delay={0.1}>
                     <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
@@ -573,12 +573,12 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div className="mt-10 sm:mt-12 text-center">
+        <footer className="mt-10 sm:mt-12 text-center">
           <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-lg transition-colors duration-300`}>
             <h3 className={`text-2xl font-bold ${textClass} mb-2`}>Built for the OpenxAI Global Accelerator 2025</h3>
             <p className={textSecondaryClass}>Runs with local Ollama for offline capability. Toggle modes to fit your environment.</p>
           </div>
-        </div>
+        </footer>
       </div>
 
       {/* History Modal */}
