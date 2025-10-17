@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X } from 'lucide-react'
+import { motion, useInView } from 'motion/react'
 
 type Nutrition = {
   calories: number
@@ -42,6 +43,39 @@ export default function Home() {
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Animated Item Component
+  const AnimatedHistoryItem = ({ children, delay = 0, index }: { children: React.ReactNode; delay?: number; index: number }) => {
+    const ref = useRef<HTMLDivElement>(null)
+    const inView = useInView(ref, { amount: 0.3, once: false })
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+        animate={inView ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.8, opacity: 0, y: 20 }}
+        transition={{ duration: 0.3, delay: delay + index * 0.05 }}
+      >
+        {children}
+      </motion.div>
+    )
+  }
+
+  // Animated Section Component for Results
+  const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+    const ref = useRef<HTMLDivElement>(null)
+    const inView = useInView(ref, { amount: 0.4, once: false })
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ scale: 0.9, opacity: 0, x: -30 }}
+        animate={inView ? { scale: 1, opacity: 1, x: 0 } : { scale: 0.9, opacity: 0, x: -30 }}
+        transition={{ duration: 0.4, delay }}
+      >
+        {children}
+      </motion.div>
+    )
+  }
 
   // Load theme preference from localStorage
   useEffect(() => {
@@ -54,6 +88,12 @@ export default function Home() {
     const saved = localStorage.getItem('savedAnalyses')
     if (saved) {
       setSavedAnalyses(JSON.parse(saved))
+    }
+    
+    // Load unread count
+    const unread = localStorage.getItem('unreadCount')
+    if (unread) {
+      setUnreadCount(parseInt(unread))
     }
   }, [])
 
@@ -174,6 +214,11 @@ export default function Home() {
     setSavedAnalyses(updated)
     localStorage.setItem('savedAnalyses', JSON.stringify(updated))
     
+    // Increment unread count
+    const newUnreadCount = unreadCount + 1
+    setUnreadCount(newUnreadCount)
+    localStorage.setItem('unreadCount', newUnreadCount.toString())
+    
     setSavedSuccess(true)
     setTimeout(() => setSavedSuccess(false), 3000)
   }
@@ -194,6 +239,17 @@ export default function Home() {
     const updated = savedAnalyses.filter(s => s.id !== id)
     setSavedAnalyses(updated)
     localStorage.setItem('savedAnalyses', JSON.stringify(updated))
+  }
+
+  const handleOpenHistory = () => {
+    setShowHistory(true)
+    // Clear unread count when opening history
+    setUnreadCount(0)
+    localStorage.setItem('unreadCount', '0')
+  }
+
+  const handleCloseHistory = () => {
+    setShowHistory(false)
   }
 
   const headerTitle = useMemo(() => '🍽️ SmartBite', [])
@@ -223,14 +279,14 @@ export default function Home() {
             <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">{headerTitle}</h1>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowHistory(!showHistory)}
+                onClick={handleOpenHistory}
                 className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all relative`}
                 aria-label="View history"
               >
                 <History size={24} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
-                {savedAnalyses.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {savedAnalyses.length}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {unreadCount}
                   </span>
                 )}
               </button>
@@ -413,69 +469,77 @@ export default function Home() {
 
                 <div className="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                   {/* Dish Overview */}
-                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                      <Salad size={20} />
-                      <h3 className="text-lg font-bold">Dish Overview</h3>
-                    </div>
-                    <p className={`${textClass} text-2xl font-bold mb-1`}>{result.dishName}</p>
-                    <p className={textSecondaryClass}>Cuisine: <span className="font-medium">{result.cuisineType}</span></p>
-                  </section>
+                  <AnimatedSection delay={0.1}>
+                    <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                      <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                        <Salad size={20} />
+                        <h3 className="text-lg font-bold">Dish Overview</h3>
+                      </div>
+                      <p className={`${textClass} text-2xl font-bold mb-1`}>{result.dishName}</p>
+                      <p className={textSecondaryClass}>Cuisine: <span className="font-medium">{result.cuisineType}</span></p>
+                    </section>
+                  </AnimatedSection>
 
                   {/* Ingredients */}
-                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                      <Salad size={20} />
-                      <h3 className="text-lg font-bold">Ingredients</h3>
-                    </div>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {result.ingredients.map((ing, idx) => (
-                        <li key={idx} className={`${textSecondaryClass} font-medium`}>• {ing}</li>
-                      ))}
-                    </ul>
-                  </section>
+                  <AnimatedSection delay={0.2}>
+                    <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                      <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                        <Salad size={20} />
+                        <h3 className="text-lg font-bold">Ingredients</h3>
+                      </div>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {result.ingredients.map((ing, idx) => (
+                          <li key={idx} className={`${textSecondaryClass} font-medium`}>• {ing}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  </AnimatedSection>
 
                   {/* Nutrition */}
-                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                      <Gauge size={20} />
-                      <h3 className="text-lg font-bold">Nutritional Facts</h3>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.calories)}</div>
-                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Calories</div>
+                  <AnimatedSection delay={0.3}>
+                    <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                      <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                        <Gauge size={20} />
+                        <h3 className="text-lg font-bold">Nutritional Facts</h3>
                       </div>
-                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.protein_g)}g</div>
-                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Protein</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                          <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.calories)}</div>
+                          <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Calories</div>
+                        </div>
+                        <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                          <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.protein_g)}g</div>
+                          <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Protein</div>
+                        </div>
+                        <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                          <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.carbs_g)}g</div>
+                          <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Carbs</div>
+                        </div>
+                        <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
+                          <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.fat_g)}g</div>
+                          <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Fat</div>
+                        </div>
                       </div>
-                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.carbs_g)}g</div>
-                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Carbs</div>
-                      </div>
-                      <div className={`${darkMode ? 'bg-slate-600/50' : 'bg-white'} rounded-lg p-4 text-center shadow-sm border ${darkMode ? 'border-slate-500' : 'border-gray-200'}`}>
-                        <div className={`text-3xl font-bold ${textClass}`}>{Math.round(result.nutrition.fat_g)}g</div>
-                        <div className={`${textSecondaryClass} text-sm font-medium mt-1`}>Fat</div>
-                      </div>
-                    </div>
-                  </section>
+                    </section>
+                  </AnimatedSection>
 
                   {/* Recipe */}
-                  <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
-                    <div className={`flex items-center gap-2 ${textClass} mb-3`}>
-                      <ChefHat size={20} />
-                      <h3 className="text-lg font-bold">Recipe Guide</h3>
-                    </div>
-                    <p className={`${textSecondaryClass} mb-3 font-medium`}>
-                      Servings: {result.recipe.servings} • Prep: {result.recipe.prepMinutes}m • Cook: {result.recipe.cookMinutes}m
-                    </p>
-                    <ol className={`list-decimal list-inside space-y-2 ${textSecondaryClass}`}>
-                      {result.recipe.steps.map((step, idx) => (
-                        <li key={idx} className="leading-relaxed">{step}</li>
-                      ))}
-                    </ol>
-                  </section>
+                  <AnimatedSection delay={0.4}>
+                    <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
+                      <div className={`flex items-center gap-2 ${textClass} mb-3`}>
+                        <ChefHat size={20} />
+                        <h3 className="text-lg font-bold">Recipe Guide</h3>
+                      </div>
+                      <p className={`${textSecondaryClass} mb-3 font-medium`}>
+                        Servings: {result.recipe.servings} • Prep: {result.recipe.prepMinutes}m • Cook: {result.recipe.cookMinutes}m
+                      </p>
+                      <ol className={`list-decimal list-inside space-y-2 ${textSecondaryClass}`}>
+                        {result.recipe.steps.map((step, idx) => (
+                          <li key={idx} className="leading-relaxed">{step}</li>
+                        ))}
+                      </ol>
+                    </section>
+                  </AnimatedSection>
                 </div>
               </>
             )}
@@ -493,15 +557,21 @@ export default function Home() {
 
       {/* History Modal */}
       {showHistory && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border shadow-2xl`}>
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={handleCloseHistory}
+        >
+          <div 
+            className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border shadow-2xl`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-6">
               <h2 className={`text-2xl font-bold ${textClass} flex items-center gap-2`}>
                 <History size={28} />
                 Saved Analyses ({savedAnalyses.length})
               </h2>
               <button
-                onClick={() => setShowHistory(false)}
+                onClick={handleCloseHistory}
                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
               >
                 <X size={24} className={textClass} />
@@ -514,43 +584,45 @@ export default function Home() {
                 <p>No saved analyses yet. Analyze a dish and save it!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {savedAnalyses.map((saved) => (
-                  <div
-                    key={saved.id}
-                    className={`${darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'} rounded-xl p-4 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} transition-all cursor-pointer group`}
-                  >
-                    <div className="flex gap-4">
-                      <img
-                        src={saved.imageUrl}
-                        alt={saved.dishName}
-                        className="w-24 h-24 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <h3 className={`${textClass} font-bold mb-1`}>{saved.dishName}</h3>
-                        <p className={`${textSecondaryClass} text-sm mb-2`}>
-                          {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => loadSavedAnalysis(saved)}
-                            className={`text-sm px-3 py-1 rounded-lg ${buttonPrimaryClass} transition-all`}
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteSavedAnalysis(saved.id)
-                            }}
-                            className={`text-sm px-3 py-1 rounded-lg ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                {savedAnalyses.map((saved, index) => (
+                  <AnimatedHistoryItem key={saved.id} index={index} delay={0.1}>
+                    <div
+                      className={`${darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'} rounded-xl p-4 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} transition-all cursor-pointer group`}
+                    >
+                      <div className="flex gap-4">
+                        <img
+                          src={saved.imageUrl}
+                          alt={saved.dishName}
+                          className="w-32 h-32 object-cover rounded-lg shadow-md"
+                        />
+                        <div className="flex-1">
+                          <h3 className={`${textClass} font-bold mb-1 text-xl`}>{saved.dishName}</h3>
+                          <p className={`${textSecondaryClass} text-md mb-2`}>
+                            {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => loadSavedAnalysis(saved)}
+                              className={`text-md px-4 py-2 rounded-lg mt-2 ${buttonPrimaryClass} transition-all font-medium`}
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteSavedAnalysis(saved.id)
+                              }}
+                              className={`text-md px-4 py-2 rounded-lg mt-2 ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all font-medium flex items-center gap-1`}
+                            >
+                              <Trash2 size={14} />
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </AnimatedHistoryItem>
                 ))}
               </div>
             )}
