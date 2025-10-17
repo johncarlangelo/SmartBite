@@ -10,6 +10,7 @@ Project is based on the VISION-TRACK template located at `demo-app-VISION/nextjs
 - Node.js 18+
 - Ollama running locally (`ollama serve`)
 - A vision-capable model (e.g., `ollama pull llava:7b`)
+- For Shadcn library (`npx shadcn@latest add https://reactbits.dev/r/AnimatedList-TS-TW`)
 
 ### Run
 ```bash

@@ -44,6 +44,7 @@ export default function Home() {
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
   const [showHistory, setShowHistory] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isFromHistory, setIsFromHistory] = useState(false) // ADDED: Track if result is from history
 
   // Animated Item Component
   const AnimatedHistoryItem = ({ children, delay = 0, index }: { children: React.ReactNode; delay?: number; index: number }) => {
@@ -177,6 +178,7 @@ export default function Home() {
     setIsAnalyzing(true)
     setError(null)
     setProgress(0)
+    setIsFromHistory(false) // ADDED: Reset history flag
     try {
       const form = new FormData()
       form.append('image', fileObj)
@@ -201,7 +203,18 @@ export default function Home() {
   }
 
   const saveAnalysis = () => {
-    if (!result || !selectedImage) return
+    if (!result || !selectedImage || isFromHistory) return
+    
+    // Check if already saved (prevent duplicates)
+    const alreadySaved = savedAnalyses.some(saved => 
+      saved.dishName === result.dishName && 
+      saved.imageUrl === selectedImage
+    )
+    
+    if (alreadySaved) {
+      setSavedSuccess(true)
+      return
+    }
     
     const newSave: SavedAnalysis = {
       ...result,
@@ -220,7 +233,6 @@ export default function Home() {
     localStorage.setItem('unreadCount', newUnreadCount.toString())
     
     setSavedSuccess(true)
-    setTimeout(() => setSavedSuccess(false), 3000)
   }
 
   const loadSavedAnalysis = (saved: SavedAnalysis) => {
@@ -232,6 +244,7 @@ export default function Home() {
       nutrition: saved.nutrition,
       recipe: saved.recipe
     })
+    setIsFromHistory(true)
     setShowHistory(false)
   }
 
@@ -358,7 +371,7 @@ export default function Home() {
                 />
               </label>
 
-              {selectedImage && !result && (
+              {selectedImage && !result && !error && (
                 <button
                   onClick={analyzeImage}
                   disabled={isAnalyzing}
@@ -369,6 +382,20 @@ export default function Home() {
                 </button>
               )}
 
+              {error && (
+                <button
+                  onClick={() => {
+                    setSelectedImage(null)
+                    setFileObj(null)
+                    setError(null)
+                  }}
+                  className={`w-full flex items-center justify-center gap-3 ${buttonPrimaryClass} px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                >
+                  <Upload size={22} />
+                  <span className="text-lg">Upload Another Image</span>
+                </button>
+              )}
+
               {result && (
                 <button
                   onClick={() => {
@@ -376,6 +403,8 @@ export default function Home() {
                     setFileObj(null)
                     setResult(null)
                     setError(null)
+                    setIsFromHistory(false)
+                    setSavedSuccess(false) // ADDED: Reset saved status
                   }}
                   className={`w-full flex items-center justify-center gap-3 ${buttonPrimaryClass} px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
                 >
@@ -446,26 +475,23 @@ export default function Home() {
 
             {result && (
               <>
-                <button
-                  onClick={saveAnalysis}
-                  className={`w-full flex items-center justify-center gap-3 mb-5 ${
-                    savedSuccess 
-                      ? darkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'
-                      : buttonPrimaryClass
-                  } px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
-                >
-                  {savedSuccess ? (
-                    <>
-                      <Save size={20} />
-                      <span>Saved to History!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save size={20} />
-                      <span>Save to History</span>
-                    </>
-                  )}
-                </button>
+                {/* MODIFIED: Save Button section to hide when saved or from history */}
+                {result && !isFromHistory && !savedSuccess && (
+                  <button
+                    onClick={saveAnalysis}
+                    className={`w-full flex items-center justify-center gap-3 mb-5 ${buttonPrimaryClass} px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                  >
+                    <Save size={20} />
+                    <span>Save to History</span>
+                  </button>
+                )}
+
+                {savedSuccess && !isFromHistory && (
+                  <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-green-600' : 'bg-green-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
+                    <Save size={20} />
+                    <span>Saved to History!</span>
+                  </div>
+                )}
 
                 <div className="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                   {/* Dish Overview */}
