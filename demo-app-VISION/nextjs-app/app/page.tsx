@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
@@ -489,7 +488,7 @@ export default function Home() {
       </div>
 
       {/* Overlay gradient for better readability */}
-      <div className={`fixed inset-0 -z-5 transition-colors duration-300 ${darkMode
+      <div className={`fixed inset-0 -z-5 transition-colors duration-300 pointer-events-none ${darkMode
         ? 'bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80'
         : 'bg-gradient-to-br from-white/80 via-blue-50/70 to-purple-50/80'
         }`} />
@@ -501,7 +500,11 @@ export default function Home() {
             <div className="flex gap-2">
               <button
                 onClick={handleOpenHistory}
-                className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all relative`}
+                className={`p-3 rounded-xl ${
+                  darkMode 
+                    ? 'bg-slate-600 hover:bg-slate-500 border-slate-500' 
+                    : 'bg-white hover:bg-gray-50 border-gray-300'
+                } border-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 relative`}
                 aria-label="View history"
               >
                 <History size={24} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
@@ -513,17 +516,25 @@ export default function Home() {
               </button>
               <button
                 onClick={toggleTheme}
-                className={`p-3 rounded-xl ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-lg transition-all`}
+                className={`p-3 rounded-xl ${
+                  darkMode 
+                    ? 'bg-slate-600 hover:bg-slate-500 border-slate-500' 
+                    : 'bg-white hover:bg-gray-50 border-gray-300'
+                } border-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95`}
                 aria-label="Toggle theme"
               >
-                {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-700" />}
+                {darkMode ? (
+                  <Sun size={24} className="text-yellow-400" />
+                ) : (
+                  <Moon size={24} className="text-slate-700" />
+                )}
               </button>
             </div>
           </div>
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
 
-        <div className="grid grid-rows-1 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 h-full">
+        <div className="grid grid-cols-1 gap-6 lg:gap-8">
           {/* Upload Panel */}
           <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 flex flex-col w-full`}>
             <div className="flex items-center justify-between mb-6 ">
@@ -629,7 +640,7 @@ export default function Home() {
           </div>
 
           {/* Results Panel */}
-          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 w-full flex flex-col min-h-0`}>
+          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 w-full flex flex-col`}>
             <h2 className={`text-[20px] font-bold ${textClass} mb-6`}>Results</h2>
 
             {!result && !isAnalyzing && !error && (
@@ -708,7 +719,7 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="space-y-5 max-h-[550px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-5">
                   {/* Dish Overview */}
                   <AnimatedSection delay={0.1}>
                     <section className={`${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'} rounded-xl p-5 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} shadow-sm`}>
