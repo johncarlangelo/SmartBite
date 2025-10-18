@@ -1,9 +1,11 @@
+
 'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
+
 
 type Nutrition = {
   calories: number
@@ -32,6 +34,7 @@ type SavedAnalysis = AnalysisResult & {
   createdAt?: string // For cached results
 }
 
+
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [fileObj, setFileObj] = useState<File | null>(null)
@@ -49,8 +52,8 @@ export default function Home() {
   const [isFromHistory, setIsFromHistory] = useState(false)
   const [isFromCache, setIsFromCache] = useState(false) // New state for cache detection
 
-  // Background images - add your images to public/images/ folder
-  const backgroundImages = [
+  // Background images - memoized to prevent re-renders
+  const backgroundImages = useMemo(() => [
     '/images/burger.png',
     '/images/chicken.png',
     '/images/chips.png',
@@ -79,17 +82,12 @@ export default function Home() {
     '/images/burger.png',
     '/images/chicken.png',
     '/images/chips.png',
-  ]
-
-  // Debug: Log to verify images are loaded
-  useEffect(() => {
-    console.log('Background images:', backgroundImages)
-  }, [])
+  ], [])
 
   // Animated Item Component
   const AnimatedHistoryItem = ({ children, delay = 0, index }: { children: React.ReactNode; delay?: number; index: number }) => {
     const ref = useRef<HTMLDivElement>(null)
-    const inView = useInView(ref, { amount: 0.3, once: false })
+    const inView = useInView(ref, { amount: 0.3, once: true })
     return (
       <motion.div
         ref={ref}
@@ -105,7 +103,7 @@ export default function Home() {
   // Animated Section Component for Results
   const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
     const ref = useRef<HTMLDivElement>(null)
-    const inView = useInView(ref, { amount: 0.4, once: false })
+    const inView = useInView(ref, { amount: 0.4, once: true })
     return (
       <motion.div
         ref={ref}
@@ -140,9 +138,11 @@ export default function Home() {
 
   // Save theme preference
   const toggleTheme = () => {
+    console.log('Toggle theme clicked! Current darkMode:', darkMode)
     const newTheme = !darkMode
     setDarkMode(newTheme)
     localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    console.log('New theme set to:', newTheme ? 'dark' : 'light')
   }
 
   const onFilesSelected = useCallback((file: File | undefined) => {
@@ -355,10 +355,10 @@ export default function Home() {
     setShowHistory(false)
   }
 
-  const headerTitle = useMemo(() => '🍽️ SmartBite', [])
+  const headerTitle = useMemo(() => ' SmartBite', [])
   const headerSubtitle = useMemo(() => 'Identify dishes, ingredients, nutrition, and recipes from a photo', [])
 
-  // Theme classes (removed bgClass since we're using GridMotionBackground)
+  // Theme classes
   const textClass = darkMode ? 'text-white' : 'text-gray-900'
   const textSecondaryClass = darkMode ? 'text-gray-300' : 'text-gray-600'
   const cardClass = darkMode
@@ -381,8 +381,8 @@ export default function Home() {
 
       {/* Overlay gradient for better readability */}
       <div className={`fixed inset-0 -z-5 transition-colors duration-300 ${darkMode
-          ? 'bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80'
-          : 'bg-gradient-to-br from-white/80 via-blue-50/70 to-purple-50/80'
+        ? 'bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80'
+        : 'bg-gradient-to-br from-white/80 via-blue-50/70 to-purple-50/80'
         }`} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -414,16 +414,16 @@ export default function Home() {
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-rows-1 lg:grid-rows-2 gap-6 lg:gap-8 h-full self-auto">
           {/* Upload Panel */}
-          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
-            <div className="flex items-center justify-between mb-6">
+          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 h-full flex flex-col w-full self-auto`}>
+            <div className="flex items-center justify-between mb-6 ">
               <h2 className={`text-[20px] font-bold ${textClass}`}>Upload Dish Photo</h2>
               <button
                 onClick={() => setOffline((v) => !v)}
                 className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm ${darkMode
-                    ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
                   } border`}
                 title={offline ? 'Using local Ollama model' : 'Using online model'}
               >
@@ -437,8 +437,8 @@ export default function Home() {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 className={`flex flex-col items-center justify-center w-full h-72 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${darkMode
-                    ? 'border-slate-600 hover:border-blue-500 hover:bg-slate-700/30'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'
+                  ? 'border-slate-600 hover:border-blue-500 hover:bg-slate-700/30'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'
                   }`}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
@@ -520,7 +520,7 @@ export default function Home() {
           </div>
 
           {/* Results Panel */}
-          <div className={`${cardClass} lg:col-span-2 rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
+          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 h-full w-full`}>
             <h2 className={`text-[20px] font-bold ${textClass} mb-6`}>Results</h2>
 
             {!result && !isAnalyzing && !error && (
@@ -561,8 +561,8 @@ export default function Home() {
                     <div
                       key={idx}
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${progress >= step
-                          ? darkMode ? 'bg-blue-500 scale-110' : 'bg-blue-600 scale-110'
-                          : darkMode ? 'bg-slate-600' : 'bg-gray-300'
+                        ? darkMode ? 'bg-blue-500 scale-110' : 'bg-blue-600 scale-110'
+                        : darkMode ? 'bg-slate-600' : 'bg-gray-300'
                         }`}
                     />
                   ))}

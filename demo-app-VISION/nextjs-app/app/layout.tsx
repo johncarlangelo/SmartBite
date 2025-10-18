@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'SmartBite',
   description: 'Identify dishes, ingredients, nutrition and recipes from a photo',
+  icons: {
+    icon: '/images/diet.png',
+  },
 }
 
 export default function RootLayout({
