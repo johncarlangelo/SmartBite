@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
-import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X } from 'lucide-react'
+import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 
 type Nutrition = {
@@ -28,6 +28,7 @@ type SavedAnalysis = AnalysisResult & {
   id: string
   savedAt: string
   imageUrl: string
+  createdAt?: string // For cached results
 }
 
 export default function Home() {
@@ -44,7 +45,8 @@ export default function Home() {
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
   const [showHistory, setShowHistory] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [isFromHistory, setIsFromHistory] = useState(false) // ADDED: Track if result is from history
+  const [isFromHistory, setIsFromHistory] = useState(false)
+  const [isFromCache, setIsFromCache] = useState(false) // New state for cache detection
 
   // Animated Item Component
   const AnimatedHistoryItem = ({ children, delay = 0, index }: { children: React.ReactNode; delay?: number; index: number }) => {
@@ -137,7 +139,7 @@ export default function Home() {
     e.preventDefault()
   }
 
-  // ADDED: Progress simulation effect
+  // Progress simulation effect
   useEffect(() => {
     if (!isAnalyzing) {
       setProgress(0)
@@ -173,23 +175,72 @@ export default function Home() {
     }
   }, [isAnalyzing])
 
+  // NEW: Check cache before analyzing
+  const checkCache = async (file: File): Promise<{ cached: boolean; analysis?: any; imageHash?: string }> => {
+    try {
+      const form = new FormData()
+      form.append('image', file)
+      
+      const response = await fetch('/api/check-cache', {
+        method: 'POST',
+        body: form,
+      })
+      
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to check cache')
+      
+      return data
+    } catch (err) {
+      console.error('Cache check failed:', err)
+      return { cached: false } // Continue with analysis if cache check fails
+    }
+  }
+
   const analyzeImage = async () => {
     if (!fileObj) return
+    
     setIsAnalyzing(true)
     setError(null)
     setProgress(0)
-    setIsFromHistory(false) // ADDED: Reset history flag
+    setIsFromHistory(false)
+    setIsFromCache(false)
+    
     try {
+      // First check if we have a cached result
+      const cacheResult = await checkCache(fileObj)
+      
+      if (cacheResult.cached && cacheResult.analysis) {
+        // Use cached result
+        setProgress(100)
+        setAnalysisStage('Loaded from cache!')
+        setIsFromCache(true)
+        
+        setTimeout(() => {
+          setResult(cacheResult.analysis)
+          setIsAnalyzing(false)
+        }, 500)
+        return
+      }
+      
+      // Proceed with analysis if not cached
       const form = new FormData()
       form.append('image', fileObj)
       form.append('offline', String(offline))
+      
+      // Include imageHash if we got one from cache check
+      if (cacheResult.imageHash) {
+        form.append('imageHash', cacheResult.imageHash)
+      }
+      
       const response = await fetch('/api/analyze-image', {
         method: 'POST',
         body: form,
       })
+      
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to analyze image')
-      // ADDED: Complete progress before showing results
+      
+      // Complete progress before showing results
       setProgress(100)
       setAnalysisStage('Complete!')
       setTimeout(() => {
@@ -220,7 +271,8 @@ export default function Home() {
       ...result,
       id: Date.now().toString(),
       savedAt: new Date().toISOString(),
-      imageUrl: selectedImage
+      imageUrl: selectedImage,
+      createdAt: isFromCache ? new Date().toISOString() : undefined // Mark if from cache
     }
     
     const updated = [newSave, ...savedAnalyses]
@@ -404,7 +456,8 @@ export default function Home() {
                     setResult(null)
                     setError(null)
                     setIsFromHistory(false)
-                    setSavedSuccess(false) // ADDED: Reset saved status
+                    setIsFromCache(false)
+                    setSavedSuccess(false)
                   }}
                   className={`w-full flex items-center justify-center gap-3 ${buttonPrimaryClass} px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
                 >
@@ -434,7 +487,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* MODIFIED: Enhanced analyzing state with progress bar */}
+            {/* Enhanced analyzing state with progress bar */}
             {isAnalyzing && (
               <div className={`text-center ${textClass} py-12`}>
                 <div className="relative inline-block mb-6">
@@ -475,7 +528,7 @@ export default function Home() {
 
             {result && (
               <>
-                {/* MODIFIED: Save Button section to hide when saved or from history */}
+                {/* Save Button section to hide when saved or from history */}
                 {result && !isFromHistory && !savedSuccess && (
                   <button
                     onClick={saveAnalysis}
@@ -490,6 +543,14 @@ export default function Home() {
                   <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-green-600' : 'bg-green-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
                     <Save size={20} />
                     <span>Saved to History!</span>
+                  </div>
+                )}
+
+                {/* NEW: Cache indicator */}
+                {isFromCache && (
+                  <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-blue-600' : 'bg-blue-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
+                    <Clock size={20} />
+                    <span>Loaded from cache! Analysis retrieved instantly.</span>
                   </div>
                 )}
 
@@ -627,6 +688,13 @@ export default function Home() {
                           <p className={`${textSecondaryClass} text-md mb-2`}>
                             {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
                           </p>
+                          {/* NEW: Show if result was from cache */}
+                          {saved.createdAt && saved.createdAt !== saved.savedAt && (
+                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${darkMode ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'} mb-2`}>
+                              <Clock size={12} />
+                              Cached result
+                            </div>
+                          )}
                           <div className="flex gap-2">
                             <button
                               onClick={() => loadSavedAnalysis(saved)}

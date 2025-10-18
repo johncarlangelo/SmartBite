@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 type Nutrition = {
   calories: number
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const imageFile = formData.get('image') as File | null
     const offlineFlag = formData.get('offline') as string | null
+    const imageHash = formData.get('imageHash') as string | null // New parameter
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image file provided' }, { status: 400 })
@@ -108,6 +110,11 @@ export async function POST(req: NextRequest) {
     // Additional field checks when food is detected
     if (!parsed.dishName || !Array.isArray(parsed.ingredients) || !parsed.recipe || !parsed.nutrition) {
       throw new Error('Incomplete AI response for food image')
+    }
+
+    // Save to database if we have an image hash
+    if (imageHash) {
+      db.saveAnalysis(imageHash, parsed)
     }
 
     return NextResponse.json(parsed)
