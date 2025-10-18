@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
+import GridMotion from '@/components/GridMotion'
 
 type Nutrition = {
   calories: number
@@ -48,6 +49,43 @@ export default function Home() {
   const [isFromHistory, setIsFromHistory] = useState(false)
   const [isFromCache, setIsFromCache] = useState(false) // New state for cache detection
 
+  // Background images - add your images to public/images/ folder
+  const backgroundImages = [
+    '/images/burger.png',
+    '/images/chicken.png',
+    '/images/chips.png',
+    '/images/fries.png',
+    '/images/pizza.png',
+    '/images/burger.png', // Repeat to fill more grid cells
+    '/images/chicken.png',
+    '/images/chips.png',
+    '/images/fries.png',
+    '/images/pizza.png',
+    '/images/burger.png',
+    '/images/chicken.png',
+    '/images/chips.png',
+    '/images/fries.png',
+    '/images/pizza.png',
+    '/images/burger.png',
+    '/images/chicken.png',
+    '/images/chips.png',
+    '/images/fries.png',
+    '/images/pizza.png',
+    '/images/burger.png',
+    '/images/chicken.png',
+    '/images/chips.png',
+    '/images/fries.png',
+    '/images/pizza.png',
+    '/images/burger.png',
+    '/images/chicken.png',
+    '/images/chips.png',
+  ]
+
+  // Debug: Log to verify images are loaded
+  useEffect(() => {
+    console.log('Background images:', backgroundImages)
+  }, [])
+
   // Animated Item Component
   const AnimatedHistoryItem = ({ children, delay = 0, index }: { children: React.ReactNode; delay?: number; index: number }) => {
     const ref = useRef<HTMLDivElement>(null)
@@ -86,13 +124,13 @@ export default function Home() {
     if (savedTheme) {
       setDarkMode(savedTheme === 'dark')
     }
-    
+
     // Load saved analyses
     const saved = localStorage.getItem('savedAnalyses')
     if (saved) {
       setSavedAnalyses(JSON.parse(saved))
     }
-    
+
     // Load unread count
     const unread = localStorage.getItem('unreadCount')
     if (unread) {
@@ -180,15 +218,15 @@ export default function Home() {
     try {
       const form = new FormData()
       form.append('image', file)
-      
+
       const response = await fetch('/api/check-cache', {
         method: 'POST',
         body: form,
       })
-      
+
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to check cache')
-      
+
       return data
     } catch (err) {
       console.error('Cache check failed:', err)
@@ -198,48 +236,48 @@ export default function Home() {
 
   const analyzeImage = async () => {
     if (!fileObj) return
-    
+
     setIsAnalyzing(true)
     setError(null)
     setProgress(0)
     setIsFromHistory(false)
     setIsFromCache(false)
-    
+
     try {
       // First check if we have a cached result
       const cacheResult = await checkCache(fileObj)
-      
+
       if (cacheResult.cached && cacheResult.analysis) {
         // Use cached result
         setProgress(100)
         setAnalysisStage('Loaded from cache!')
         setIsFromCache(true)
-        
+
         setTimeout(() => {
           setResult(cacheResult.analysis)
           setIsAnalyzing(false)
         }, 500)
         return
       }
-      
+
       // Proceed with analysis if not cached
       const form = new FormData()
       form.append('image', fileObj)
       form.append('offline', String(offline))
-      
+
       // Include imageHash if we got one from cache check
       if (cacheResult.imageHash) {
         form.append('imageHash', cacheResult.imageHash)
       }
-      
+
       const response = await fetch('/api/analyze-image', {
         method: 'POST',
         body: form,
       })
-      
+
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to analyze image')
-      
+
       // Complete progress before showing results
       setProgress(100)
       setAnalysisStage('Complete!')
@@ -255,18 +293,18 @@ export default function Home() {
 
   const saveAnalysis = () => {
     if (!result || !selectedImage || isFromHistory) return
-    
+
     // Check if already saved (prevent duplicates)
-    const alreadySaved = savedAnalyses.some(saved => 
-      saved.dishName === result.dishName && 
+    const alreadySaved = savedAnalyses.some(saved =>
+      saved.dishName === result.dishName &&
       saved.imageUrl === selectedImage
     )
-    
+
     if (alreadySaved) {
       setSavedSuccess(true)
       return
     }
-    
+
     const newSave: SavedAnalysis = {
       ...result,
       id: Date.now().toString(),
@@ -274,16 +312,16 @@ export default function Home() {
       imageUrl: selectedImage,
       createdAt: isFromCache ? new Date().toISOString() : undefined // Mark if from cache
     }
-    
+
     const updated = [newSave, ...savedAnalyses]
     setSavedAnalyses(updated)
     localStorage.setItem('savedAnalyses', JSON.stringify(updated))
-    
+
     // Increment unread count
     const newUnreadCount = unreadCount + 1
     setUnreadCount(newUnreadCount)
     localStorage.setItem('unreadCount', newUnreadCount.toString())
-    
+
     setSavedSuccess(true)
   }
 
@@ -320,23 +358,32 @@ export default function Home() {
   const headerTitle = useMemo(() => '🍽️ SmartBite', [])
   const headerSubtitle = useMemo(() => 'Identify dishes, ingredients, nutrition, and recipes from a photo', [])
 
-  // Theme classes
-  const bgClass = darkMode 
-    ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
-    : 'bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50'
-  
+  // Theme classes (removed bgClass since we're using GridMotionBackground)
   const textClass = darkMode ? 'text-white' : 'text-gray-900'
   const textSecondaryClass = darkMode ? 'text-gray-300' : 'text-gray-600'
-  const cardClass = darkMode 
-    ? 'bg-slate-800/50 backdrop-blur-xl border-slate-700/50' 
+  const cardClass = darkMode
+    ? 'bg-slate-800/50 backdrop-blur-xl border-slate-700/50'
     : 'bg-white/80 backdrop-blur-xl border-gray-200'
-  
+
   const buttonPrimaryClass = darkMode
     ? 'bg-blue-600 hover:bg-blue-700 text-white'
     : 'bg-blue-500 hover:bg-blue-600 text-white'
 
   return (
-    <main className={`min-h-screen ${bgClass} p-6 sm:p-8 transition-colors duration-300`}>
+    <main className="min-h-screen p-6 sm:p-8 transition-colors duration-300 relative">
+      {/* GridMotion Background with fixed positioning */}
+      <div className="fixed inset-0 -z-10">
+        <GridMotion
+          items={backgroundImages}
+          gradientColor={darkMode ? '#0f172a' : '#f1f5f9'}
+        />
+      </div>
+
+      {/* Overlay gradient for better readability */}
+      <div className={`fixed inset-0 -z-5 transition-colors duration-300 ${darkMode
+          ? 'bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80'
+          : 'bg-gradient-to-br from-white/80 via-blue-50/70 to-purple-50/80'
+        }`} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className={`text-center mb-10 sm:mb-12 ${textClass}`}>
@@ -366,7 +413,7 @@ export default function Home() {
           </div>
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Upload Panel */}
           <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300`}>
@@ -374,11 +421,10 @@ export default function Home() {
               <h2 className={`text-[20px] font-bold ${textClass}`}>Upload Dish Photo</h2>
               <button
                 onClick={() => setOffline((v) => !v)}
-                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm ${
-                  darkMode 
-                    ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600' 
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm ${darkMode
+                    ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
-                } border`}
+                  } border`}
                 title={offline ? 'Using local Ollama model' : 'Using online model'}
               >
                 {offline ? <WifiOff size={18} /> : <Wifi size={18} />}
@@ -390,11 +436,10 @@ export default function Home() {
               <label
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                className={`flex flex-col items-center justify-center w-full h-72 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
-                  darkMode 
-                    ? 'border-slate-600 hover:border-blue-500 hover:bg-slate-700/30' 
+                className={`flex flex-col items-center justify-center w-full h-72 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${darkMode
+                    ? 'border-slate-600 hover:border-blue-500 hover:bg-slate-700/30'
                     : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'
-                }`}
+                  }`}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
                   {selectedImage ? (
@@ -496,30 +541,29 @@ export default function Home() {
                     {progress}%
                   </div>
                 </div>
-                
+
                 <p className="text-xl font-bold mb-2">{analysisStage || 'Starting analysis...'}</p>
                 <p className={`text-sm ${textSecondaryClass} mb-6`}>Estimated time: ~20 seconds</p>
-                
+
                 {/* Progress Bar */}
                 <div className={`w-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'} rounded-full h-3 overflow-hidden shadow-inner`}>
-                  <div 
+                  <div
                     className={`h-full ${darkMode ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-blue-400 to-blue-500'} rounded-full transition-all duration-500 ease-out relative`}
                     style={{ width: `${progress}%` }}
                   >
                     <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                   </div>
                 </div>
-                
+
                 {/* Analysis Steps Indicator */}
                 <div className="mt-8 flex justify-center gap-2">
                   {[20, 40, 60, 80, 95].map((step, idx) => (
                     <div
                       key={idx}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                        progress >= step
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${progress >= step
                           ? darkMode ? 'bg-blue-500 scale-110' : 'bg-blue-600 scale-110'
                           : darkMode ? 'bg-slate-600' : 'bg-gray-300'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -644,11 +688,11 @@ export default function Home() {
 
       {/* History Modal */}
       {showHistory && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={handleCloseHistory}
         >
-          <div 
+          <div
             className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border shadow-2xl`}
             onClick={(e) => e.stopPropagation()}
           >
