@@ -34,6 +34,13 @@ type SavedAnalysis = AnalysisResult & {
   createdAt?: string // For cached results
 }
 
+type RecentAnalysis = AnalysisResult & {
+  id: string
+  analyzedAt: string // When it was analyzed
+  imageUrl: string
+  createdAt?: string // For cached results
+}
+
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -46,8 +53,10 @@ export default function Home() {
   const [progress, setProgress] = useState(0)
   const [analysisStage, setAnalysisStage] = useState('')
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [historyView, setHistoryView] = useState<'recent' | 'saved'>('recent') // Track which view to show
   const [unreadCount, setUnreadCount] = useState(0)
   const [isFromHistory, setIsFromHistory] = useState(false)
   const [isFromCache, setIsFromCache] = useState(false) // New state for cache detection
@@ -121,6 +130,12 @@ export default function Home() {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
       setDarkMode(savedTheme === 'dark')
+    }
+
+    // Load recent analyses
+    const recent = localStorage.getItem('recentAnalyses')
+    if (recent) {
+      setRecentAnalyses(JSON.parse(recent))
     }
 
     // Load saved analyses
@@ -254,7 +269,14 @@ export default function Home() {
         setIsFromCache(true)
 
         setTimeout(() => {
-          setResult(cacheResult.analysis)
+          const analysisData = cacheResult.analysis
+          setResult(analysisData)
+          
+          // Automatically add to recent analyses
+          if (selectedImage) {
+            addToRecentAnalyses(analysisData, selectedImage, true, false)
+          }
+          
           setIsAnalyzing(false)
         }, 500)
         return
@@ -282,7 +304,13 @@ export default function Home() {
       setProgress(100)
       setAnalysisStage('Complete!')
       setTimeout(() => {
-        setResult(data as AnalysisResult)
+        const analysisData = data as AnalysisResult
+        setResult(analysisData)
+        
+        // Automatically add to recent analyses
+        if (selectedImage) {
+          addToRecentAnalyses(analysisData, selectedImage, false, false)
+        }
       }, 500)
     } catch (err: any) {
       setError(err?.message || 'Error analyzing image. Please try again.')
@@ -291,10 +319,61 @@ export default function Home() {
     }
   }
 
+  // Add to recent analyses automatically after analysis
+  const addToRecentAnalyses = (
+    analysisResult: AnalysisResult, 
+    imageUrl: string, 
+    fromCache: boolean = false,
+    fromHistory: boolean = false
+  ) => {
+    if (fromHistory) return // Don't save if viewing from history
+
+    const now = new Date().toISOString()
+
+    // Check if this dish already exists in recent (by name and image)
+    const existingIndex = recentAnalyses.findIndex(recent =>
+      recent.dishName === analysisResult.dishName &&
+      recent.imageUrl === imageUrl
+    )
+
+    let updated: RecentAnalysis[]
+
+    if (existingIndex !== -1) {
+      // Dish exists - update its analyzedAt and move to top
+      const existingDish = recentAnalyses[existingIndex]
+      const updatedDish: RecentAnalysis = {
+        ...existingDish,
+        analyzedAt: now // Update the analyzed time
+      }
+      
+      // Remove from current position and add to top
+      updated = [
+        updatedDish,
+        ...recentAnalyses.filter((_, index) => index !== existingIndex)
+      ]
+    } else {
+      // New dish - add to top
+      const newRecent: RecentAnalysis = {
+        ...analysisResult,
+        id: Date.now().toString(),
+        analyzedAt: now,
+        imageUrl: imageUrl,
+        createdAt: fromCache ? now : undefined
+      }
+      updated = [newRecent, ...recentAnalyses]
+    }
+
+    setRecentAnalyses(updated)
+    localStorage.setItem('recentAnalyses', JSON.stringify(updated))
+  }
+
+  // Manually save to saved analyses
   const saveAnalysis = () => {
     if (!result || !selectedImage || isFromHistory) return
 
-    // Check if already saved (prevent duplicates)
+    const now = new Date().toISOString()
+
+    // Check if already saved
     const alreadySaved = savedAnalyses.some(saved =>
       saved.dishName === result.dishName &&
       saved.imageUrl === selectedImage
@@ -308,9 +387,9 @@ export default function Home() {
     const newSave: SavedAnalysis = {
       ...result,
       id: Date.now().toString(),
-      savedAt: new Date().toISOString(),
+      savedAt: now,
       imageUrl: selectedImage,
-      createdAt: isFromCache ? new Date().toISOString() : undefined // Mark if from cache
+      createdAt: isFromCache ? now : undefined
     }
 
     const updated = [newSave, ...savedAnalyses]
@@ -323,6 +402,19 @@ export default function Home() {
     localStorage.setItem('unreadCount', newUnreadCount.toString())
 
     setSavedSuccess(true)
+  }
+
+  const loadRecentAnalysis = (recent: RecentAnalysis) => {
+    setSelectedImage(recent.imageUrl)
+    setResult({
+      dishName: recent.dishName,
+      cuisineType: recent.cuisineType,
+      ingredients: recent.ingredients,
+      nutrition: recent.nutrition,
+      recipe: recent.recipe
+    })
+    setIsFromHistory(true)
+    setShowHistory(false)
   }
 
   const loadSavedAnalysis = (saved: SavedAnalysis) => {
@@ -338,13 +430,30 @@ export default function Home() {
     setShowHistory(false)
   }
 
+  const deleteRecentAnalysis = (id: string) => {
+    const updated = recentAnalyses.filter(r => r.id !== id)
+    setRecentAnalyses(updated)
+    localStorage.setItem('recentAnalyses', JSON.stringify(updated))
+  }
+
   const deleteSavedAnalysis = (id: string) => {
     const updated = savedAnalyses.filter(s => s.id !== id)
     setSavedAnalyses(updated)
     localStorage.setItem('savedAnalyses', JSON.stringify(updated))
   }
 
+  // Check if current dish is already saved
+  const isAlreadySaved = useMemo(() => {
+    if (!result || !selectedImage) return false
+    
+    return savedAnalyses.some(saved =>
+      saved.dishName === result.dishName &&
+      saved.imageUrl === selectedImage
+    )
+  }, [result, selectedImage, savedAnalyses])
+
   const handleOpenHistory = () => {
+    setHistoryView('saved')
     setShowHistory(true)
     // Clear unread count when opening history
     setUnreadCount(0)
@@ -414,9 +523,9 @@ export default function Home() {
           <p className={`text-base sm:text-xl ${textSecondaryClass}`}>{headerSubtitle}</p>
         </div>
 
-        <div className="grid grid-rows-1 lg:grid-rows-2 gap-6 lg:gap-8 h-full self-auto">
+        <div className="grid grid-rows-1 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 h-full">
           {/* Upload Panel */}
-          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 h-full flex flex-col w-full self-auto`}>
+          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 flex flex-col w-full`}>
             <div className="flex items-center justify-between mb-6 ">
               <h2 className={`text-[20px] font-bold ${textClass}`}>Upload Dish Photo</h2>
               <button
@@ -520,7 +629,7 @@ export default function Home() {
           </div>
 
           {/* Results Panel */}
-          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 h-full w-full`}>
+          <div className={`${cardClass} rounded-2xl p-6 sm:p-8 border shadow-2xl transition-colors duration-300 w-full flex flex-col min-h-0`}>
             <h2 className={`text-[20px] font-bold ${textClass} mb-6`}>Results</h2>
 
             {!result && !isAnalyzing && !error && (
@@ -572,26 +681,27 @@ export default function Home() {
 
             {result && (
               <>
-                {/* Save Button section to hide when saved or from history */}
-                {result && !isFromHistory && !savedSuccess && (
+                {/* Save to History button - only show if not from history and not already saved */}
+                {!isFromHistory && !savedSuccess && !isAlreadySaved && (
                   <button
                     onClick={saveAnalysis}
                     className={`w-full flex items-center justify-center gap-3 mb-5 ${buttonPrimaryClass} px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
                   >
                     <Save size={20} />
-                    <span>Save to History</span>
+                    <span>Save to Saved Analysis</span>
                   </button>
                 )}
 
-                {savedSuccess && !isFromHistory && (
+                {/* Saved indicator */}
+                {(savedSuccess || isAlreadySaved) && !isFromHistory && (
                   <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-green-600' : 'bg-green-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
                     <Save size={20} />
-                    <span>Saved to History!</span>
+                    <span>Saved to Saved Analysis!</span>
                   </div>
                 )}
 
-                {/* NEW: Cache indicator */}
-                {isFromCache && (
+                {/* Cache indicator */}
+                {isFromCache && !isFromHistory && (
                   <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-blue-600' : 'bg-blue-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
                     <Clock size={20} />
                     <span>Loaded from cache! Analysis retrieved instantly.</span>
@@ -699,7 +809,7 @@ export default function Home() {
             <div className="flex items-center justify-between mb-6">
               <h2 className={`text-2xl font-bold ${textClass} flex items-center gap-2`}>
                 <History size={28} />
-                Saved Analyses ({savedAnalyses.length})
+                Analysis History
               </h2>
               <button
                 onClick={handleCloseHistory}
@@ -709,12 +819,118 @@ export default function Home() {
               </button>
             </div>
 
-            {savedAnalyses.length === 0 ? (
-              <div className={`text-center ${textSecondaryClass} py-12`}>
-                <History size={48} className="mx-auto mb-4 opacity-50" />
-                <p>No saved analyses yet. Analyze a dish and save it!</p>
+            {/* Tab Buttons */}
+            <div className="flex gap-3 mb-6">
+              <button
+                onClick={() => setHistoryView('saved')}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                  historyView === 'saved'
+                    ? darkMode
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-blue-500 text-white shadow-lg'
+                    : darkMode
+                    ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <History size={20} />
+                Saved Analysis
+              </button>
+              <button
+                onClick={() => setHistoryView('recent')}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                  historyView === 'recent'
+                    ? darkMode
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'bg-purple-500 text-white shadow-lg'
+                    : darkMode
+                    ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Clock size={20} />
+                Recent Analysis
+              </button>
+            </div>
+
+            {historyView === 'recent' ? (
+              /* Recently Analyzed View */
+              <div className="space-y-4">
+                {recentAnalyses.length === 0 ? (
+                  <div className={`text-center ${textSecondaryClass} py-12`}>
+                    <Clock size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>No recent analyses yet. Analyze a dish to see it here!</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className={`${textSecondaryClass} text-sm mb-4`}>
+                      Showing your {Math.min(recentAnalyses.length, 3)} most recently analyzed {recentAnalyses.length === 1 ? 'dish' : 'dishes'}
+                    </p>
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                      {recentAnalyses
+                        .sort((a, b) => new Date(b.analyzedAt).getTime() - new Date(a.analyzedAt).getTime())
+                        .slice(0, 3)
+                        .map((recent, index) => (
+                        <AnimatedHistoryItem key={recent.id} index={index} delay={0.1}>
+                          <div
+                            className={`${darkMode ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 hover:from-purple-900/40 hover:to-blue-900/40 border-purple-500/40' : 'bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-300'} rounded-xl p-4 border-2 transition-all cursor-pointer group shadow-lg`}
+                          >
+                            <div className="flex gap-4">
+                              <div className="relative">
+                                <img
+                                  src={recent.imageUrl}
+                                  alt={recent.dishName}
+                                  className="w-32 h-32 object-cover rounded-lg shadow-md"
+                                />
+                                {index === 0 && (
+                                  <div className={`absolute -top-2 -right-2 ${darkMode ? 'bg-yellow-500' : 'bg-yellow-400'} text-white text-xs font-bold px-2 py-1 rounded-full shadow-md`}>
+                                    LATEST
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h3 className={`${textClass} font-bold mb-1 text-xl`}>{recent.dishName}</h3>
+                                <p className={`${textSecondaryClass} text-sm mb-1`}>
+                                  <span className="font-semibold">Cuisine:</span> {recent.cuisineType}
+                                </p>
+                                <p className={`${textSecondaryClass} text-sm mb-2`}>
+                                  <span className="font-semibold">Analyzed:</span> {new Date(recent.analyzedAt).toLocaleDateString()} at {new Date(recent.analyzedAt).toLocaleTimeString()}
+                                </p>
+                                {recent.createdAt && (
+                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${darkMode ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'} mb-2`}>
+                                    <Clock size={12} />
+                                    Cached result
+                                  </div>
+                                )}
+                                <div className="flex gap-2 mt-3">
+                                  <button
+                                    onClick={() => loadRecentAnalysis(recent)}
+                                    className={`text-md px-4 py-2 rounded-lg ${buttonPrimaryClass} transition-all font-medium shadow-md hover:shadow-lg`}
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      deleteRecentAnalysis(recent.id)
+                                    }}
+                                    className={`text-md px-4 py-2 rounded-lg ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all font-medium flex items-center gap-1`}
+                                  >
+                                    <Trash2 size={14} />
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AnimatedHistoryItem>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
+              /* Saved Analyses View */
               <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
                 {savedAnalyses.map((saved, index) => (
                   <AnimatedHistoryItem key={saved.id} index={index} delay={0.1}>
@@ -732,7 +948,6 @@ export default function Home() {
                           <p className={`${textSecondaryClass} text-md mb-2`}>
                             {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
                           </p>
-                          {/* NEW: Show if result was from cache */}
                           {saved.createdAt && saved.createdAt !== saved.savedAt && (
                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${darkMode ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'} mb-2`}>
                               <Clock size={12} />
