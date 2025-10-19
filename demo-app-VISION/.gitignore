@@ -12,6 +12,10 @@
 /build
 .next
 
+# database files
+data/analyses.db
+data/*.db
+
 # Production
 /build
 
