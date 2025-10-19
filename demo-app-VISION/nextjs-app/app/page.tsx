@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
-import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock } from 'lucide-react'
+import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, Zap } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 
@@ -59,6 +59,8 @@ export default function Home() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [isFromHistory, setIsFromHistory] = useState(false)
   const [isFromCache, setIsFromCache] = useState(false) // New state for cache detection
+  const [cacheType, setCacheType] = useState<'exact' | 'semantic' | null>(null) // Type of cache hit
+  const [dishNameMatch, setDishNameMatch] = useState<string | null>(null) // Matched dish name for semantic cache
 
   // Background images - memoized to prevent re-renders
   const backgroundImages = useMemo(() => [
@@ -228,7 +230,7 @@ export default function Home() {
   }, [isAnalyzing])
 
   // NEW: Check cache before analyzing
-  const checkCache = async (file: File): Promise<{ cached: boolean; analysis?: any; imageHash?: string }> => {
+  const checkCache = async (file: File): Promise<{ cached: boolean; exactMatch?: boolean; semanticMatch?: boolean; analysis?: any; imageHash?: string; dishNameMatch?: string }> => {
     try {
       const form = new FormData()
       form.append('image', file)
@@ -256,6 +258,8 @@ export default function Home() {
     setProgress(0)
     setIsFromHistory(false)
     setIsFromCache(false)
+    setCacheType(null)
+    setDishNameMatch(null)
 
     try {
       // First check if we have a cached result
@@ -266,6 +270,8 @@ export default function Home() {
         setProgress(100)
         setAnalysisStage('Loaded from cache!')
         setIsFromCache(true)
+        setCacheType(cacheResult.exactMatch ? 'exact' : cacheResult.semanticMatch ? 'semantic' : null)
+        setDishNameMatch(cacheResult.dishNameMatch || null)
 
         setTimeout(() => {
           const analysisData = cacheResult.analysis
@@ -623,6 +629,8 @@ export default function Home() {
                     setIsFromHistory(false)
                     setIsFromCache(false)
                     setSavedSuccess(false)
+                    setCacheType(null)
+                    setDishNameMatch(null)
                   }}
                   className={`w-full flex items-center justify-center gap-3 ${buttonPrimaryClass} px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
                 >
@@ -713,9 +721,13 @@ export default function Home() {
 
                 {/* Cache indicator */}
                 {isFromCache && !isFromHistory && (
-                  <div className={`w-full flex items-center justify-center gap-3 mb-5 ${darkMode ? 'bg-blue-600' : 'bg-blue-500'} px-6 py-3 rounded-xl font-semibold text-white`}>
-                    <Clock size={20} />
-                    <span>Loaded from cache! Analysis retrieved instantly.</span>
+                  <div className={`w-full flex items-center justify-center gap-3 mb-5 ${cacheType === 'semantic' ? (darkMode ? 'bg-purple-600' : 'bg-purple-500') : (darkMode ? 'bg-blue-600' : 'bg-blue-500')} px-6 py-3 rounded-xl font-semibold text-white`}>
+                    {cacheType === 'semantic' ? <Zap size={20} /> : <Clock size={20} />}
+                    <span>
+                      {cacheType === 'semantic' 
+                        ? `Semantic match found! Similar dish detected: ${dishNameMatch || result.dishName}` 
+                        : 'Loaded from cache! Analysis retrieved instantly.'}
+                    </span>
                   </div>
                 )}
 

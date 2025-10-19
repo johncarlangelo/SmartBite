@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
       '- Use integers for minutes and nutrition numbers; calories can be an integer.',
       '- Keep steps between 5 and 10 concise actions.',
       '- If the photo is not food, set isFood=false and still output all fields with empty or default values for dish/ingredients/recipe/nutrition.',
+      '- For dishName, be as specific as possible (e.g., "Pepperoni Pizza" not just "Pizza", "Margherita Pizza" not just "Pizza", "Caesar Salad" not just "Salad")',
     ].join('\n')
 
     const response = await fetch(`${ollamaBaseUrl}/api/generate`, {
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     // Save to database if we have an image hash
     if (imageHash) {
-      db.saveAnalysis(imageHash, parsed)
+      db.saveAnalysis(imageHash, parsed.dishName, parsed)
     }
 
     return NextResponse.json(parsed)

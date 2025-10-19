@@ -27,42 +27,46 @@ This document provides a comprehensive summary of the SmartBite system, covering
   - Recipe generation
 
 ### 3. Caching System
-- **Mechanism**: SHA-256 image hashing for duplicate detection
+- **Mechanism**: SHA-256 image hashing for duplicate detection and semantic caching
 - **Storage**: SQLite database with better-sqlite3
 - **Benefits**:
   - Instant results for previously analyzed images
   - Reduced AI processing load
   - Consistent results for duplicates
+  - Cross-image dish recognition (semantic caching)
 
 ### 4. API Endpoints
-- **Check Cache**: `/api/check-cache` - Determines if image has been previously analyzed
+- **Check Cache**: `/api/check-cache` - Determines if image has been previously analyzed (exact or semantic match)
 - **Analyze Image**: `/api/analyze-image` - Processes images with AI and caches results
 
 ### 5. Database
 - **Type**: SQLite
-- **Schema**: Single `analyses` table with image hash, analysis data, and timestamps
+- **Schema**: Single `analyses` table with image hash, dish name, analysis data, and timestamps
 - **Location**: `data/analyses.db` file
 
 ## Data Flow
 
 1. **User uploads image** through UI
 2. **Cache check** - SHA-256 hash generated and checked against database
-3. **Cache hit** - Return cached results instantly
-4. **Cache miss** - Send to Ollama for AI analysis
-5. **AI processing** - LLaVA model analyzes image and returns structured data
-6. **Result display** - Show analysis to user
-7. **Caching** - Store results in database with image hash
-8. **History** - Save to user's history in localStorage
+3. **Semantic cache check** - If no exact match, lightweight AI analysis extracts dish name for semantic matching
+4. **Cache hit** - Return cached results instantly
+5. **Cache miss** - Send to Ollama for AI analysis
+6. **AI processing** - LLaVA model analyzes image and returns structured data
+7. **Result display** - Show analysis to user
+8. **Caching** - Store results in database with image hash and dish name
+9. **History** - Save to user's history in localStorage
 
 ## Key Features
 
 ### Performance
 - **Duplicate Detection**: SHA-256 hashing ensures identical images are recognized regardless of filename
+- **Semantic Caching**: Same dish recognition across different images
 - **Instant Loading**: Cached results load immediately without AI processing
 - **Progress Indicators**: Visual feedback during AI analysis
 
 ### Consistency
 - **Guaranteed Results**: Same image always produces identical analysis
+- **Cross-Image Consistency**: Same dish recognition regardless of image differences
 - **Cross-Device Access**: Cached results available from any device accessing the application
 - **Persistence**: Results survive browser cleanup
 
@@ -101,12 +105,13 @@ This document provides a comprehensive summary of the SmartBite system, covering
 ## Future Improvements
 
 1. **Enhanced Caching**: Cache expiration and invalidation
-2. **Distributed Storage**: Redis or other distributed caching solutions
-3. **Image Preprocessing**: Normalize images before hashing
-4. **Analytics**: Track usage patterns and popular dishes
-5. **Component Restructuring**: Break down large page component into smaller modules
-6. **Testing**: Implement comprehensive test suite
-7. **Internationalization**: Support for multiple languages
+2. **Advanced Semantic Matching**: Fuzzy string matching algorithms for better semantic matching
+3. **Distributed Storage**: Redis or other distributed caching solutions
+4. **Image Preprocessing**: Normalize images before hashing
+5. **Analytics**: Track usage patterns and popular dishes
+6. **Component Restructuring**: Break down large page component into smaller modules
+7. **Testing**: Implement comprehensive test suite
+8. **Internationalization**: Support for multiple languages
 
 ## Technical Debt
 

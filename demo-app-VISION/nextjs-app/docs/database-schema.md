@@ -11,6 +11,7 @@ erDiagram
     ANALYSES {
         string id PK
         string imageHash UK
+        string dishName
         string analysis
         string createdAt
     }
@@ -27,6 +28,7 @@ Stores cached results of image analyses for quick retrieval of previously proces
 |-------------|------|-------------|-------------|
 | id | TEXT | PRIMARY KEY | Unique identifier for the analysis record |
 | imageHash | TEXT | UNIQUE, NOT NULL | SHA-256 hash of the image content |
+| dishName | TEXT | NOT NULL | Name of the dish for semantic caching |
 | analysis | TEXT | NOT NULL | JSON string representation of the analysis results |
 | createdAt | TEXT | NOT NULL | ISO 8601 timestamp of when the analysis was created |
 
@@ -34,6 +36,7 @@ Stores cached results of image analyses for quick retrieval of previously proces
 
 1. **Primary Key Index** on `id`
 2. **Unique Index** on `imageHash`
+3. **Additional Index** on `dishName` for semantic matching
 
 ### SQL Definition
 
@@ -41,6 +44,7 @@ Stores cached results of image analyses for quick retrieval of previously proces
 CREATE TABLE IF NOT EXISTS analyses (
   id TEXT PRIMARY KEY,
   imageHash TEXT UNIQUE NOT NULL,
+  dishName TEXT NOT NULL,
   analysis TEXT NOT NULL,
   createdAt TEXT NOT NULL
 )
@@ -51,13 +55,14 @@ CREATE TABLE IF NOT EXISTS analyses (
 ### Insertion
 When a new image is analyzed and not found in the cache:
 1. Generate SHA-256 hash of the image content
-2. Convert analysis result to JSON string
-3. Insert record with generated ID, image hash, JSON analysis, and current timestamp
+2. Extract dish name from analysis results
+3. Convert analysis result to JSON string
+4. Insert record with generated ID, image hash, dish name, JSON analysis, and current timestamp
 
 ### Retrieval
 When checking for cached results:
-1. Generate SHA-256 hash of the image content
-2. Query for record with matching imageHash
+1. **Exact Match**: Generate SHA-256 hash of the image content and query for record with matching imageHash
+2. **Semantic Match**: If no exact match, extract dish name using lightweight AI and query for records with similar dishName
 3. If found, parse JSON analysis string back to object
 4. Return cached results
 
@@ -82,11 +87,14 @@ The `data` directory is created relative to the application's working directory 
 #### generateImageHash(buffer: ArrayBuffer): string
 Generates a SHA-256 hash of the provided image buffer.
 
-#### saveAnalysis(imageHash: string, analysis: any): string
+#### saveAnalysis(imageHash: string, dishName: string, analysis: any): string
 Saves an analysis result to the database and returns the generated ID.
 
 #### findAnalysisByImageHash(imageHash: string): AnalysisRecord | null
 Finds an analysis record by image hash, returning null if not found.
+
+#### findAnalysisByDishName(dishName: string): AnalysisRecord | null
+Finds an analysis record by dish name using partial matching, returning null if not found.
 
 #### getAnalysisById(id: string): AnalysisRecord | null
 Finds an analysis record by ID, returning null if not found.
@@ -104,6 +112,7 @@ Closes the database connection.
 type AnalysisRecord = {
   id: string;           // Unique identifier
   imageHash: string;    // SHA-256 hash of image content
+  dishName: string;     // Name of the dish for semantic caching
   analysis: string;     // JSON string of analysis results
   createdAt: string;    // ISO 8601 timestamp
 }
@@ -112,9 +121,10 @@ type AnalysisRecord = {
 ## Performance Considerations
 
 1. **Indexing**: The unique constraint on `imageHash` creates an index for fast lookups
-2. **Storage**: JSON strings are stored directly for simplicity
-3. **Concurrency**: SQLite handles concurrent reads well, but writes may block
-4. **Size**: No automatic cleanup; database will grow over time
+2. **Semantic Matching**: The `dishName` field enables semantic caching with partial matching
+3. **Storage**: JSON strings are stored directly for simplicity
+4. **Concurrency**: SQLite handles concurrent reads well, but writes may block
+5. **Size**: No automatic cleanup; database will grow over time
 
 ## Backup and Recovery
 
