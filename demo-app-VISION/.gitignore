@@ -13,6 +13,8 @@
 .next
 
 # database files
+nextjs-app/data/analyses.db
+nextjs-app/data/*.db
 data/analyses.db
 data/*.db
 
