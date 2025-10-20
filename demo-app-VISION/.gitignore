@@ -36,9 +36,9 @@ yarn-error.log*
 *.swo
 
 # Image files
-*.jpg
-*.jpeg
-*.png
+# *.jpg
+# *.jpeg
+# *.png
 *.gif
 *.webp
 /uploads
@@ -46,3 +46,7 @@ yarn-error.log*
 # Nix
 result
 result-* 
+
+# Database Files
+/data/*.db
+*.db
