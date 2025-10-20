@@ -11,6 +11,7 @@ Project is based on the VISION-TRACK template located at `demo-app-VISION/nextjs
 - Ollama running locally (`ollama serve`)
 - A vision-capable model (e.g., `ollama pull llava:7b`)
 - For Shadcn library (`npx shadcn@latest add https://reactbits.dev/r/AnimatedList-TS-TW`, `npx shadcn@latest add https://reactbits.dev/r/GridMotion-TS-TW`)
+- Just incase (`npm install -D tailwindcss postcss autoprefixer`, `npx tailwindcss init -p`)
 
 ### Run
 ```bash
