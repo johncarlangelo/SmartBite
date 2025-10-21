@@ -295,7 +295,15 @@ export default function AnalyzePage() {
             imageUrl,
         }
 
-        const updated = [newAnalysis, ...recentAnalyses]
+        // Read fresh data from localStorage instead of relying on state
+        const storedRecent = localStorage.getItem('recentAnalyses')
+        const currentAnalyses = storedRecent ? JSON.parse(storedRecent) : []
+        
+        // Add new analysis at the beginning and keep only 3
+        const updated = [newAnalysis, ...currentAnalyses].slice(0, 3)
+        
+        console.log('Adding to recent analyses:', updated.length, 'items', updated) // Debug log
+        
         setRecentAnalyses(updated)
         localStorage.setItem('recentAnalyses', JSON.stringify(updated))
 
