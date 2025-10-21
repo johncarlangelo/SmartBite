@@ -77,3 +77,16 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.6) rgba(0, 0, 0, 0.1);
 }
+
+/* Animation delays for blob effect */
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 6s;
+}

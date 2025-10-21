@@ -11,15 +11,9 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
     return (
-        <section className={`relative overflow-hidden transition-colors ${
-            darkMode 
-                ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
-                : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50'
-        }`}>
+        <section className="relative overflow-hidden">
             {/* Decorative Background Elements */}
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-            <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
 
             <div className="relative max-w-7xl mx-auto px-6 sm:px-8 py-16 sm:py-24 lg:py-32">
                 <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">

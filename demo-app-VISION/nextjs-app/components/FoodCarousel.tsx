@@ -61,14 +61,9 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
     };
 
     return (
-        <section className={`py-16 relative overflow-hidden transition-colors ${
-            darkMode
-                ? 'bg-gradient-to-b from-slate-900 to-slate-800'
-                : 'bg-gradient-to-b from-white to-blue-50'
-        }`}>
+        <section className="py-16 relative overflow-hidden">
             {/* Background Decoration */}
             <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
-            <div className="absolute top-10 right-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
 
             <div className="relative max-w-7xl mx-auto px-6 sm:px-8">
                 {/* Header */}
