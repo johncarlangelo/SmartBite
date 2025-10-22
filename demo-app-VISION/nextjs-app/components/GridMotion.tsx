@@ -11,45 +11,49 @@ interface GridMotionProps {
 const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black', opacity = 1, blur = 0 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const mouseXRef = useRef<number>(window.innerWidth / 2);
 
   const totalItems = 28;
   const defaultItems = Array.from({ length: totalItems }, (_, index) => `Item ${index + 1}`);
   const combinedItems = items.length > 0 ? items.slice(0, totalItems) : defaultItems;
 
-  useEffect(() => {
-    gsap.ticker.lagSmoothing(0);
+useEffect(() => {
+  // Infinite slideshow animation for each row
+  rowRefs.current.forEach((row, index) => {
+    if (row) {
+      const direction = index % 2 === 0 ? 1 : -1;
+      const speedFactor = 0.2; // 
+      const duration = (40 + index * 8) * speedFactor; // reduced a bit from (50 + 10)
+      const distance = 500;
 
-    const handleMouseMove = (e: MouseEvent): void => {
-      mouseXRef.current = e.clientX;
-    };
-
-    const updateMotion = (): void => {
-      const maxMoveAmount = 300;
-      const baseDuration = 0.8;
-      const inertiaFactors = [0.6, 0.4, 0.3, 0.2];
-
-      rowRefs.current.forEach((row, index) => {
-        if (row) {
-          const direction = index % 2 === 0 ? 1 : -1;
-          const moveAmount = ((mouseXRef.current / window.innerWidth) * maxMoveAmount - maxMoveAmount / 2) * direction;
-
-          gsap.to(row, {
-            x: moveAmount,
-            duration: baseDuration + inertiaFactors[index % inertiaFactors.length],
-            ease: 'power3.out',
-            overwrite: 'auto'
-          });
-        }
+      // Create infinite sliding animation (back and forth)
+      gsap.to(row, {
+        x: direction * distance,
+        duration: duration,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
       });
-    };
 
-    const removeAnimationLoop = gsap.ticker.add(updateMotion);
-    window.addEventListener('mousemove', handleMouseMove);
+      // Add subtle vertical floating effect
+      gsap.to(row, {
+        y: Math.sin(index * 0.5) * 15,
+        duration: 4 + index * 0.5,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+      });
+    }
+  });
+}, []);
+  useEffect(() => {
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      removeAnimationLoop();
+      // Clean up animations on unmount
+      rowRefs.current.forEach((row) => {
+        if (row) {
+          gsap.killTweensOf(row);
+        }
+      });
     };
   }, []);
 
@@ -79,7 +83,7 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black', 
                 return (
                   <div key={itemIndex} className="relative">
                     <div className="relative w-full h-full overflow-hidden rounded-[10px] bg-[#111] flex items-center justify-center text-white text-[1.5rem]">
-                      {typeof content === 'string' && content.startsWith('http') ? (
+                      {typeof content === 'string' && (content.startsWith('http') || content.startsWith('/')) ? (
                         <div
                           className="w-full h-full bg-cover bg-center absolute top-0 left-0"
                           style={{ backgroundImage: `url(${content})` }}
