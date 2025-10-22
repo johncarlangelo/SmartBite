@@ -9,49 +9,45 @@ interface GridMotionProps {
 const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black' }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mouseXRef = useRef<number>(window.innerWidth / 2);
 
   const totalItems = 28;
   const defaultItems = Array.from({ length: totalItems }, (_, index) => `Item ${index + 1}`);
   const combinedItems = items.length > 0 ? items.slice(0, totalItems) : defaultItems;
 
-useEffect(() => {
-  // Infinite slideshow animation for each row
-  rowRefs.current.forEach((row, index) => {
-    if (row) {
-      const direction = index % 2 === 0 ? 1 : -1;
-      const speedFactor = 0.2; // 
-      const duration = (40 + index * 8) * speedFactor; // reduced a bit from (50 + 10)
-      const distance = 500;
-
-      // Create infinite sliding animation (back and forth)
-      gsap.to(row, {
-        x: direction * distance,
-        duration: duration,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
-      });
-
-      // Add subtle vertical floating effect
-      gsap.to(row, {
-        y: Math.sin(index * 0.5) * 15,
-        duration: 4 + index * 0.5,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
-      });
-    }
-  });
-}, []);
   useEffect(() => {
+    gsap.ticker.lagSmoothing(0);
 
-    return () => {
-      // Clean up animations on unmount
-      rowRefs.current.forEach((row) => {
+    const handleMouseMove = (e: MouseEvent): void => {
+      mouseXRef.current = e.clientX;
+    };
+
+    const updateMotion = (): void => {
+      const maxMoveAmount = 300;
+      const baseDuration = 0.8;
+      const inertiaFactors = [0.6, 0.4, 0.3, 0.2];
+
+      rowRefs.current.forEach((row, index) => {
         if (row) {
-          gsap.killTweensOf(row);
+          const direction = index % 2 === 0 ? 1 : -1;
+          const moveAmount = ((mouseXRef.current / window.innerWidth) * maxMoveAmount - maxMoveAmount / 2) * direction;
+
+          gsap.to(row, {
+            x: moveAmount,
+            duration: baseDuration + inertiaFactors[index % inertiaFactors.length],
+            ease: 'power3.out',
+            overwrite: 'auto'
+          });
         }
       });
+    };
+
+    const removeAnimationLoop = gsap.ticker.add(updateMotion);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      removeAnimationLoop();
     };
   }, []);
 
@@ -79,7 +75,7 @@ useEffect(() => {
                 return (
                   <div key={itemIndex} className="relative">
                     <div className="relative w-full h-full overflow-hidden rounded-[10px] bg-[#111] flex items-center justify-center text-white text-[1.5rem]">
-                      {typeof content === 'string' && (content.startsWith('http') || content.startsWith('/')) ? (
+                      {typeof content === 'string' && content.startsWith('http') ? (
                         <div
                           className="w-full h-full bg-cover bg-center absolute top-0 left-0"
                           style={{ backgroundImage: `url(${content})` }}
