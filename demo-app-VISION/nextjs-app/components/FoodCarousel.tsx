@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Star, TrendingUp, Flame } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -20,6 +20,7 @@ interface FoodCarouselProps {
 
 const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [hasAnimated, setHasAnimated] = useState(false);
 
     const foods: FoodCardProps[] = [
         { name: "Classic Burger", image: "/images/burger.png", price: "$8.50", rating: 4.8, cal: "650 cal", badge: "Popular", badgeColor: "blue" },
@@ -32,15 +33,57 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
         { name: "Deluxe Burger", image: "/images/burger.png", price: "$11.50", rating: 5.0, cal: "720 cal", badge: "Premium", badgeColor: "blue" },
     ];
 
-    const scroll = (direction: "left" | "right") => {
-        if (scrollRef.current) {
-            const scrollAmount = 300;
-            scrollRef.current.scrollBy({
-                left: direction === "left" ? -scrollAmount : scrollAmount,
-                behavior: "smooth",
-            });
-        }
-    };
+    // Triple the items for seamless infinite scroll
+    const infiniteFoods = [...foods, ...foods, ...foods];
+
+    // Auto-scroll effect
+    useEffect(() => {
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
+
+        // Mark as animated after initial mount
+        const timer = setTimeout(() => {
+            setHasAnimated(true);
+        }, 1000);
+
+        let animationFrameId: number;
+        const scrollSpeed = 0.5; // pixels per frame
+
+        const autoScroll = () => {
+            if (scrollContainer) {
+                scrollContainer.scrollLeft += scrollSpeed;
+
+                // Calculate the width of one set of items
+                const itemWidth = 304; // card width (280) + gap (24)
+                const singleSetWidth = itemWidth * foods.length;
+
+                // Reset to middle when scrolled past second set (seamless loop)
+                if (scrollContainer.scrollLeft >= singleSetWidth * 2) {
+                    scrollContainer.scrollLeft -= singleSetWidth;
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(autoScroll);
+        };
+
+        // Wait a bit for DOM to be fully ready, then start scrolling
+        const startTimer = setTimeout(() => {
+            // Start at the middle set for seamless looping
+            const itemWidth = 304;
+            if (scrollContainer) {
+                scrollContainer.scrollLeft = itemWidth * foods.length;
+                animationFrameId = requestAnimationFrame(autoScroll);
+            }
+        }, 100);
+
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(startTimer);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
+    }, [foods.length]);
 
     const getBadgeStyles = (color: string) => {
         const styles: Record<string, string> = {
@@ -82,45 +125,20 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
                         </h2>
                         <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Explore our most loved menu items</p>
                     </div>
-
-                    {/* Navigation Buttons */}
-                    <div className="hidden sm:flex gap-2">
-                        <button
-                            onClick={() => scroll("left")}
-                            className={`p-3 rounded-xl backdrop-blur-xl border transition-all ${
-                                darkMode
-                                    ? 'bg-slate-800/50 border-slate-700 text-white hover:bg-slate-700 hover:border-slate-600'
-                                    : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-white hover:border-gray-300'
-                            }`}
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-                        <button
-                            onClick={() => scroll("right")}
-                            className={`p-3 rounded-xl backdrop-blur-xl border transition-all ${
-                                darkMode
-                                    ? 'bg-slate-800/50 border-slate-700 text-white hover:bg-slate-700 hover:border-slate-600'
-                                    : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-white hover:border-gray-300'
-                            }`}
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                    </div>
                 </motion.div>
 
                 {/* Carousel */}
                 <div
                     ref={scrollRef}
-                    className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+                    className="flex gap-6 overflow-x-auto scrollbar-hide pb-4"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                    {foods.map((food, index) => (
+                    {infiniteFoods.map((food, index) => (
                         <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 50 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.1 }}
-                            transition={{ delay: index * 0.1, duration: 0.5 }}
+                            key={`${food.name}-${index}`}
+                            initial={!hasAnimated ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={!hasAnimated ? { delay: (index % foods.length) * 0.1, duration: 0.5 } : { duration: 0 }}
                             className={`group min-w-[280px] backdrop-blur-xl border rounded-2xl p-5 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer ${
                                 darkMode
                                     ? 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600 hover:shadow-blue-500/20'

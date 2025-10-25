@@ -299,8 +299,13 @@ export default function AnalyzePage() {
         const storedRecent = localStorage.getItem('recentAnalyses')
         const currentAnalyses = storedRecent ? JSON.parse(storedRecent) : []
         
+        // Check if the dish already exists in recent analyses (by dish name)
+        const filteredAnalyses = currentAnalyses.filter(
+            (item: RecentAnalysis) => item.dishName !== analysis.dishName
+        )
+        
         // Add new analysis at the beginning and keep only 3
-        const updated = [newAnalysis, ...currentAnalyses].slice(0, 3)
+        const updated = [newAnalysis, ...filteredAnalyses].slice(0, 3)
         
         console.log('Adding to recent analyses:', updated.length, 'items', updated) // Debug log
         
@@ -810,21 +815,6 @@ export default function AnalyzePage() {
                         {/* Tab Buttons */}
                         <div className="flex gap-3 mb-6">
                             <button
-                                onClick={() => setHistoryView('saved')}
-                                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                                    historyView === 'saved'
-                                        ? darkMode
-                                            ? 'bg-blue-600 text-white shadow-lg'
-                                            : 'bg-blue-500 text-white shadow-lg'
-                                        : darkMode
-                                            ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                            >
-                                <History size={20} />
-                                Saved Analysis
-                            </button>
-                            <button
                                 onClick={() => setHistoryView('recent')}
                                 className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
                                     historyView === 'recent'
@@ -838,6 +828,21 @@ export default function AnalyzePage() {
                             >
                                 <Clock size={20} />
                                 Recent Analysis
+                            </button>
+                            <button
+                                onClick={() => setHistoryView('saved')}
+                                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                                    historyView === 'saved'
+                                        ? darkMode
+                                            ? 'bg-blue-600 text-white shadow-lg'
+                                            : 'bg-blue-500 text-white shadow-lg'
+                                        : darkMode
+                                            ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                <History size={20} />
+                                Saved Analysis
                             </button>
                         </div>
 
