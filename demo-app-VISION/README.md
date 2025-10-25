@@ -157,4 +157,4 @@ Extend the analysis results display with:
 - Category classifications
 - Custom visualizations
 
-Build amazing computer vision applications! 👁️ 
+Build amazing computer vision applications!! 👁️ 
