@@ -5,6 +5,7 @@ import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, S
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
+import RecommendedDishes from '@/components/RecommendedDishes'
 
 
 type Nutrition = {
@@ -782,6 +783,14 @@ export default function AnalyzePage() {
                                             </ol>
                                         </div>
                                     </div>
+                                </AnimatedSection>
+
+                                {/* Recommended Dishes */}
+                                <AnimatedSection delay={0.4}>
+                                    <RecommendedDishes 
+                                        ingredients={result.ingredients} 
+                                        darkMode={darkMode}
+                                    />
                                 </AnimatedSection>
                             </div>
                         </motion.div>
