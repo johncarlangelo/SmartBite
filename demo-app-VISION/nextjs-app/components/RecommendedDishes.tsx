@@ -8,6 +8,8 @@ type RecommendedDish = {
     description: string
     calories: number
     cuisine: string
+    allergens: string[]
+    isHalal: boolean
 }
 
 type RecommendedDishesProps = {
@@ -24,52 +26,106 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
         // Sample recommendation database (in production, this would come from your AI/API)
         const dishDatabase: Record<string, RecommendedDish[]> = {
             'potato': [
-                { name: 'Hash Browns', description: 'Crispy shredded potato patties, perfect for breakfast.', calories: 180, cuisine: 'American' },
-                { name: 'Potato Wedges', description: 'Thick-cut potato wedges with crispy edges.', calories: 220, cuisine: 'American' },
-                { name: 'Mashed Potatoes', description: 'Creamy and buttery mashed potatoes.', calories: 160, cuisine: 'American' },
-                { name: 'Potato Gratin', description: 'Layered potatoes baked in cream and cheese.', calories: 280, cuisine: 'French' },
+                { name: 'Hash Browns', description: 'Crispy shredded potato patties, perfect for breakfast.', calories: 180, cuisine: 'American', allergens: [], isHalal: true },
+                { name: 'Potato Wedges', description: 'Thick-cut potato wedges with crispy edges.', calories: 220, cuisine: 'American', allergens: [], isHalal: true },
+                { name: 'Mashed Potatoes', description: 'Creamy and buttery mashed potatoes.', calories: 160, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+                { name: 'Potato Gratin', description: 'Layered potatoes baked in cream and cheese.', calories: 280, cuisine: 'French', allergens: ['Dairy'], isHalal: true },
             ],
             'chicken': [
-                { name: 'Chicken Wings', description: 'Crispy fried wings with your favorite sauce.', calories: 320, cuisine: 'American' },
-                { name: 'Chicken Tikka', description: 'Grilled marinated chicken with Indian spices.', calories: 250, cuisine: 'Indian' },
-                { name: 'Chicken Teriyaki', description: 'Glazed chicken with sweet soy-based sauce.', calories: 290, cuisine: 'Japanese' },
-                { name: 'BBQ Chicken', description: 'Smoky grilled chicken with BBQ sauce.', calories: 310, cuisine: 'American' },
+                { name: 'Chicken Wings', description: 'Crispy fried wings with your favorite sauce.', calories: 320, cuisine: 'American', allergens: ['Gluten'], isHalal: true },
+                { name: 'Chicken Tikka', description: 'Grilled marinated chicken with Indian spices.', calories: 250, cuisine: 'Indian', allergens: ['Dairy'], isHalal: true },
+                { name: 'Chicken Teriyaki', description: 'Glazed chicken with sweet soy-based sauce.', calories: 290, cuisine: 'Japanese', allergens: ['Soy', 'Gluten'], isHalal: true },
+                { name: 'BBQ Chicken', description: 'Smoky grilled chicken with BBQ sauce.', calories: 310, cuisine: 'American', allergens: [], isHalal: true },
             ],
             'chocolate': [
-                { name: 'Chocolate Brownies', description: 'Rich, fudgy chocolate brownies.', calories: 350, cuisine: 'American' },
-                { name: 'Chocolate Mousse', description: 'Light and airy chocolate dessert.', calories: 280, cuisine: 'French' },
-                { name: 'Chocolate Chip Cookies', description: 'Classic cookies with melted chocolate chips.', calories: 150, cuisine: 'American' },
-                { name: 'Hot Chocolate', description: 'Warm, creamy chocolate beverage.', calories: 190, cuisine: 'International' },
+                { name: 'Chocolate Brownies', description: 'Rich, fudgy chocolate brownies.', calories: 350, cuisine: 'American', allergens: ['Eggs', 'Gluten', 'Dairy'], isHalal: true },
+                { name: 'Chocolate Mousse', description: 'Light and airy chocolate dessert.', calories: 280, cuisine: 'French', allergens: ['Eggs', 'Dairy'], isHalal: true },
+                { name: 'Chocolate Chip Cookies', description: 'Classic cookies with melted chocolate chips.', calories: 150, cuisine: 'American', allergens: ['Eggs', 'Gluten', 'Dairy'], isHalal: true },
+                { name: 'Hot Chocolate', description: 'Warm, creamy chocolate beverage.', calories: 190, cuisine: 'International', allergens: ['Dairy'], isHalal: true },
             ],
             'cheese': [
-                { name: 'Mac and Cheese', description: 'Creamy macaroni pasta with melted cheese.', calories: 340, cuisine: 'American' },
-                { name: 'Cheese Quesadilla', description: 'Grilled tortilla filled with melted cheese.', calories: 290, cuisine: 'Mexican' },
-                { name: 'Cheese Pizza', description: 'Classic pizza with mozzarella cheese.', calories: 280, cuisine: 'Italian' },
-                { name: 'Grilled Cheese', description: 'Toasted sandwich with melted cheese.', calories: 320, cuisine: 'American' },
+                { name: 'Mac and Cheese', description: 'Creamy macaroni pasta with melted cheese.', calories: 340, cuisine: 'American', allergens: ['Dairy', 'Gluten'], isHalal: true },
+                { name: 'Cheese Quesadilla', description: 'Grilled tortilla filled with melted cheese.', calories: 290, cuisine: 'Mexican', allergens: ['Dairy', 'Gluten'], isHalal: true },
+                { name: 'Cheese Pizza', description: 'Classic pizza with mozzarella cheese.', calories: 280, cuisine: 'Italian', allergens: ['Dairy', 'Gluten'], isHalal: true },
+                { name: 'Grilled Cheese', description: 'Toasted sandwich with melted cheese.', calories: 320, cuisine: 'American', allergens: ['Dairy', 'Gluten'], isHalal: true },
             ],
             'rice': [
-                { name: 'Fried Rice', description: 'Stir-fried rice with vegetables and seasonings.', calories: 240, cuisine: 'Asian' },
-                { name: 'Risotto', description: 'Creamy Italian rice dish.', calories: 280, cuisine: 'Italian' },
-                { name: 'Rice Pudding', description: 'Sweet dessert made with rice and milk.', calories: 210, cuisine: 'International' },
-                { name: 'Biryani', description: 'Fragrant spiced rice with meat or vegetables.', calories: 320, cuisine: 'Indian' },
+                { name: 'Fried Rice', description: 'Stir-fried rice with vegetables and seasonings.', calories: 240, cuisine: 'Asian', allergens: ['Soy', 'Eggs'], isHalal: true },
+                { name: 'Risotto', description: 'Creamy Italian rice dish.', calories: 280, cuisine: 'Italian', allergens: ['Dairy'], isHalal: true },
+                { name: 'Rice Pudding', description: 'Sweet dessert made with rice and milk.', calories: 210, cuisine: 'International', allergens: ['Dairy'], isHalal: true },
+                { name: 'Biryani', description: 'Fragrant spiced rice with meat or vegetables.', calories: 320, cuisine: 'Indian', allergens: ['Dairy'], isHalal: true },
             ],
             'beef': [
-                { name: 'Beef Tacos', description: 'Seasoned ground beef in crispy shells.', calories: 290, cuisine: 'Mexican' },
-                { name: 'Beef Stir Fry', description: 'Quick-cooked beef with vegetables.', calories: 310, cuisine: 'Asian' },
-                { name: 'Beef Burger', description: 'Juicy beef patty in a toasted bun.', calories: 450, cuisine: 'American' },
-                { name: 'Beef Stew', description: 'Tender beef slow-cooked with vegetables.', calories: 340, cuisine: 'American' },
+                { name: 'Beef Tacos', description: 'Seasoned ground beef in crispy shells.', calories: 290, cuisine: 'Mexican', allergens: ['Gluten'], isHalal: false },
+                { name: 'Beef Stir Fry', description: 'Quick-cooked beef with vegetables.', calories: 310, cuisine: 'Asian', allergens: ['Soy'], isHalal: false },
+                { name: 'Beef Burger', description: 'Juicy beef patty in a toasted bun.', calories: 450, cuisine: 'American', allergens: ['Gluten', 'Dairy'], isHalal: false },
+                { name: 'Beef Stew', description: 'Tender beef slow-cooked with vegetables.', calories: 340, cuisine: 'American', allergens: [], isHalal: false },
             ],
             'tomato': [
-                { name: 'Tomato Soup', description: 'Smooth and creamy tomato soup.', calories: 120, cuisine: 'American' },
-                { name: 'Bruschetta', description: 'Toasted bread topped with fresh tomatoes.', calories: 180, cuisine: 'Italian' },
-                { name: 'Tomato Pasta', description: 'Pasta tossed in rich tomato sauce.', calories: 280, cuisine: 'Italian' },
-                { name: 'Caprese Salad', description: 'Fresh tomatoes, mozzarella, and basil.', calories: 220, cuisine: 'Italian' },
+                { name: 'Tomato Soup', description: 'Smooth and creamy tomato soup.', calories: 120, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+                { name: 'Bruschetta', description: 'Toasted bread topped with fresh tomatoes.', calories: 180, cuisine: 'Italian', allergens: ['Gluten'], isHalal: true },
+                { name: 'Tomato Pasta', description: 'Pasta tossed in rich tomato sauce.', calories: 280, cuisine: 'Italian', allergens: ['Gluten'], isHalal: true },
+                { name: 'Caprese Salad', description: 'Fresh tomatoes, mozzarella, and basil.', calories: 220, cuisine: 'Italian', allergens: ['Dairy'], isHalal: true },
             ],
             'egg': [
-                { name: 'Scrambled Eggs', description: 'Fluffy scrambled eggs.', calories: 140, cuisine: 'American' },
-                { name: 'Omelet', description: 'Folded egg dish with various fillings.', calories: 180, cuisine: 'French' },
-                { name: 'Egg Fried Rice', description: 'Fried rice with scrambled eggs.', calories: 260, cuisine: 'Asian' },
-                { name: 'Deviled Eggs', description: 'Hard-boiled eggs with creamy filling.', calories: 130, cuisine: 'American' },
+                { name: 'Scrambled Eggs', description: 'Fluffy scrambled eggs.', calories: 140, cuisine: 'American', allergens: ['Eggs'], isHalal: true },
+                { name: 'Omelet', description: 'Folded egg dish with various fillings.', calories: 180, cuisine: 'French', allergens: ['Eggs', 'Dairy'], isHalal: true },
+                { name: 'Egg Fried Rice', description: 'Fried rice with scrambled eggs.', calories: 260, cuisine: 'Asian', allergens: ['Eggs', 'Soy'], isHalal: true },
+                { name: 'Deviled Eggs', description: 'Hard-boiled eggs with creamy filling.', calories: 130, cuisine: 'American', allergens: ['Eggs'], isHalal: true },
+            ],
+            'flour': [
+                { name: 'Waffles', description: 'Crispy golden waffles with syrup.', calories: 290, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Crepes', description: 'Thin French pancakes with sweet or savory fillings.', calories: 180, cuisine: 'French', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Biscuits', description: 'Fluffy buttermilk biscuits.', calories: 220, cuisine: 'American', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'Pizza Dough', description: 'Fresh homemade pizza base.', calories: 250, cuisine: 'Italian', allergens: ['Gluten'], isHalal: true },
+            ],
+            'milk': [
+                { name: 'Milkshake', description: 'Creamy blended ice cream drink.', calories: 350, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+                { name: 'Custard', description: 'Smooth vanilla custard dessert.', calories: 200, cuisine: 'French', allergens: ['Dairy', 'Eggs'], isHalal: true },
+                { name: 'Ice Cream', description: 'Frozen creamy dessert in various flavors.', calories: 270, cuisine: 'International', allergens: ['Dairy'], isHalal: true },
+                { name: 'Pudding', description: 'Sweet milk-based dessert.', calories: 190, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+            ],
+            'sugar': [
+                { name: 'Donuts', description: 'Sweet fried dough rings with glaze.', calories: 320, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Cookies', description: 'Sweet baked treats in various flavors.', calories: 150, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Cupcakes', description: 'Small frosted cakes.', calories: 280, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Macarons', description: 'Delicate French meringue cookies.', calories: 90, cuisine: 'French', allergens: ['Eggs'], isHalal: true },
+            ],
+            'butter': [
+                { name: 'Croissants', description: 'Flaky buttery French pastry.', calories: 230, cuisine: 'French', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'Shortbread', description: 'Buttery Scottish cookies.', calories: 160, cuisine: 'Scottish', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'Butter Cookies', description: 'Classic rich butter cookies.', calories: 140, cuisine: 'Danish', allergens: ['Gluten', 'Dairy', 'Eggs'], isHalal: true },
+                { name: 'Brioche', description: 'Rich, buttery French bread.', calories: 210, cuisine: 'French', allergens: ['Gluten', 'Dairy', 'Eggs'], isHalal: true },
+            ],
+            'vanilla': [
+                { name: 'Vanilla Cake', description: 'Classic vanilla layer cake.', calories: 320, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Vanilla Ice Cream', description: 'Creamy vanilla frozen dessert.', calories: 250, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+                { name: 'Vanilla Pudding', description: 'Smooth vanilla custard.', calories: 180, cuisine: 'American', allergens: ['Dairy'], isHalal: true },
+                { name: 'Vanilla Cookies', description: 'Sweet vanilla-flavored cookies.', calories: 140, cuisine: 'American', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+            ],
+            'bread': [
+                { name: 'French Toast', description: 'Egg-dipped bread cooked until golden.', calories: 220, cuisine: 'French', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Bread Pudding', description: 'Sweet baked dessert with bread and custard.', calories: 280, cuisine: 'British', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: true },
+                { name: 'Garlic Bread', description: 'Toasted bread with garlic butter.', calories: 150, cuisine: 'Italian', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'Bruschetta', description: 'Grilled bread with toppings.', calories: 180, cuisine: 'Italian', allergens: ['Gluten'], isHalal: true },
+            ],
+            'pasta': [
+                { name: 'Spaghetti Carbonara', description: 'Pasta with creamy egg and bacon sauce.', calories: 380, cuisine: 'Italian', allergens: ['Gluten', 'Eggs', 'Dairy'], isHalal: false },
+                { name: 'Fettuccine Alfredo', description: 'Pasta in rich cream sauce.', calories: 420, cuisine: 'Italian', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'Lasagna', description: 'Layered pasta with meat and cheese.', calories: 450, cuisine: 'Italian', allergens: ['Gluten', 'Dairy'], isHalal: false },
+                { name: 'Penne Arrabbiata', description: 'Pasta in spicy tomato sauce.', calories: 290, cuisine: 'Italian', allergens: ['Gluten'], isHalal: true },
+            ],
+            'pork': [
+                { name: 'Pork Chops', description: 'Grilled or pan-fried pork chops.', calories: 340, cuisine: 'American', allergens: [], isHalal: false },
+                { name: 'BBQ Ribs', description: 'Slow-cooked ribs with BBQ sauce.', calories: 480, cuisine: 'American', allergens: [], isHalal: false },
+                { name: 'Pork Dumplings', description: 'Steamed dumplings with pork filling.', calories: 260, cuisine: 'Asian', allergens: ['Gluten', 'Soy'], isHalal: false },
+                { name: 'Tonkatsu', description: 'Breaded fried pork cutlet.', calories: 390, cuisine: 'Japanese', allergens: ['Gluten', 'Eggs'], isHalal: false },
+            ],
+            'fish': [
+                { name: 'Fish and Chips', description: 'Battered fried fish with fries.', calories: 450, cuisine: 'British', allergens: ['Fish', 'Gluten'], isHalal: true },
+                { name: 'Grilled Salmon', description: 'Perfectly grilled salmon fillet.', calories: 280, cuisine: 'International', allergens: ['Fish'], isHalal: true },
+                { name: 'Fish Tacos', description: 'Fried fish in soft tortillas.', calories: 320, cuisine: 'Mexican', allergens: ['Fish', 'Gluten'], isHalal: true },
+                { name: 'Sushi', description: 'Japanese rice with raw fish.', calories: 220, cuisine: 'Japanese', allergens: ['Fish', 'Soy'], isHalal: true },
             ],
         }
 
@@ -77,6 +133,7 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
         let recommendations: RecommendedDish[] = []
         
         // Search for dishes matching the prominent ingredient
+        // Try to match the prominent ingredient with database keys
         for (const key in dishDatabase) {
             if (prominentIngredient.includes(key) || key.includes(prominentIngredient)) {
                 recommendations.push(...dishDatabase[key])
@@ -84,15 +141,29 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
             }
         }
 
+        // If still no matches, try checking all ingredients for a match
+        if (recommendations.length === 0 && ingredients.length > 1) {
+            for (const ingredient of ingredients.slice(0, 3)) {
+                const lowerIngredient = ingredient.toLowerCase()
+                for (const key in dishDatabase) {
+                    if (lowerIngredient.includes(key) || key.includes(lowerIngredient)) {
+                        recommendations.push(...dishDatabase[key])
+                        break
+                    }
+                }
+                if (recommendations.length > 0) break
+            }
+        }
+
         // If no matches found, return general recommendations
         if (recommendations.length === 0) {
             recommendations = [
-                { name: 'Caesar Salad', description: 'Fresh romaine lettuce with Caesar dressing.', calories: 180, cuisine: 'Italian' },
-                { name: 'Spring Rolls', description: 'Crispy fried rolls with vegetable filling.', calories: 160, cuisine: 'Asian' },
-                { name: 'Garlic Bread', description: 'Toasted bread with garlic butter.', calories: 150, cuisine: 'Italian' },
-                { name: 'French Fries', description: 'Crispy golden fried potatoes.', calories: 220, cuisine: 'American' },
-                { name: 'Onion Rings', description: 'Battered and fried onion rings.', calories: 240, cuisine: 'American' },
-                { name: 'Nachos', description: 'Tortilla chips topped with cheese and toppings.', calories: 300, cuisine: 'Mexican' },
+                { name: 'Caesar Salad', description: 'Fresh romaine lettuce with Caesar dressing.', calories: 180, cuisine: 'Italian', allergens: ['Dairy', 'Eggs'], isHalal: true },
+                { name: 'Spring Rolls', description: 'Crispy fried rolls with vegetable filling.', calories: 160, cuisine: 'Asian', allergens: ['Gluten', 'Soy'], isHalal: true },
+                { name: 'Garlic Bread', description: 'Toasted bread with garlic butter.', calories: 150, cuisine: 'Italian', allergens: ['Gluten', 'Dairy'], isHalal: true },
+                { name: 'French Fries', description: 'Crispy golden fried potatoes.', calories: 220, cuisine: 'American', allergens: [], isHalal: true },
+                { name: 'Onion Rings', description: 'Battered and fried onion rings.', calories: 240, cuisine: 'American', allergens: ['Gluten'], isHalal: true },
+                { name: 'Nachos', description: 'Tortilla chips topped with cheese and toppings.', calories: 300, cuisine: 'Mexican', allergens: ['Dairy'], isHalal: true },
             ]
         }
 
@@ -147,7 +218,7 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
                         `}
                         style={{
                             // Fixed height to prevent layout shifts
-                            minHeight: hoveredIndex === index ? '180px' : '140px',
+                            minHeight: hoveredIndex === index ? '240px' : '140px',
                         }}
                     >
                         <div className="p-5">
@@ -194,6 +265,22 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
                                         </span>
                                         <span className={`text-sm font-semibold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                                             {dish.cuisine}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`}>
+                                            Allergens:
+                                        </span>
+                                        <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                                            {dish.allergens.length > 0 ? dish.allergens.join(', ') : 'None'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            Halal:
+                                        </span>
+                                        <span className={`text-sm font-semibold ${dish.isHalal ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
+                                            {dish.isHalal ? 'Yes' : 'No'}
                                         </span>
                                     </div>
                                 </motion.div>
