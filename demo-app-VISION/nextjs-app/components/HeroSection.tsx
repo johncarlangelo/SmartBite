@@ -83,33 +83,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
                                 <span>Browse Menu</span>
                             </button>
                         </motion.div>
-
-                        {/* Stats */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6, duration: 0.6 }}
-                            className="flex flex-wrap items-center gap-6 sm:gap-8 justify-center lg:justify-start pt-6 text-sm"
-                        >
-                            {[
-                                { value: "0", label: "Dishes Analyzed" },
-                                { value: "0", label: "Accuracy" },
-                                { value: "0", label: "Happy Users" }
-                            ].map((stat, index) => (
-                                <motion.div
-                                    key={stat.label}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 0.7 + index * 0.1, duration: 0.4 }}
-                                    className="text-center lg:text-left"
-                                >
-                                    <div className={`text-2xl font-bold ${
-                                        darkMode ? 'text-white' : 'text-gray-900'
-                                    }`}>{stat.value}</div>
-                                    <div className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{stat.label}</div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
                     </motion.div>
 
                     {/* Right Image */}

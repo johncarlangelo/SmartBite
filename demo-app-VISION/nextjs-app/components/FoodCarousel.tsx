@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Star, TrendingUp, Flame } from "lucide-react";
 import { motion } from "motion/react";
 
 interface FoodCardProps {
@@ -16,9 +15,10 @@ interface FoodCardProps {
 
 interface FoodCarouselProps {
     darkMode?: boolean;
+    isOnline?: boolean;
 }
 
-const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
+const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true, isOnline = true }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [hasAnimated, setHasAnimated] = useState(false);
 
@@ -85,24 +85,6 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
         };
     }, [foods.length]);
 
-    const getBadgeStyles = (color: string) => {
-        const styles: Record<string, string> = {
-            blue: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-            red: "bg-red-500/20 text-red-400 border-red-500/30",
-            green: "bg-green-500/20 text-green-400 border-green-500/30",
-            yellow: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-            purple: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-            pink: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-        };
-        return styles[color] || styles.blue;
-    };
-
-    const getBadgeIcon = (badge: string) => {
-        if (badge === "Hot" || badge === "Trending") return <Flame size={14} />;
-        if (badge === "Popular" || badge === "Premium") return <TrendingUp size={14} />;
-        return null;
-    };
-
     return (
         <section className="py-16 relative overflow-hidden">
             {/* Background Decoration */}
@@ -127,7 +109,26 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
                     </div>
                 </motion.div>
 
+                {/* Offline Message */}
+                {!isOnline && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className={`mb-8 p-6 rounded-2xl border text-center ${
+                            darkMode
+                                ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                                : 'bg-orange-50 border-orange-200 text-orange-700'
+                        }`}
+                    >
+                        <p className="text-lg font-semibold">
+                            📡 Go online to see popular dishes as well as the pictures
+                        </p>
+                    </motion.div>
+                )}
+
                 {/* Carousel */}
+                {isOnline && (
                 <div
                     ref={scrollRef}
                     className="flex gap-6 overflow-x-auto scrollbar-hide pb-4"
@@ -145,12 +146,8 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
                                     : 'bg-white/80 border-gray-200 hover:bg-white hover:border-gray-300 hover:shadow-blue-500/10'
                             }`}
                         >
-                            {/* Badge */}
-                            <div className="flex items-center justify-between mb-3">
-                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${getBadgeStyles(food.badgeColor)}`}>
-                                    {getBadgeIcon(food.badge)}
-                                    {food.badge}
-                                </span>
+                            {/* Calorie Info */}
+                            <div className="flex items-center justify-end mb-3">
                                 <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{food.cal}</span>
                             </div>
 
@@ -168,16 +165,11 @@ const FoodCarousel: React.FC<FoodCarouselProps> = ({ darkMode = true }) => {
                             {/* Info */}
                             <div className="space-y-2">
                                 <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{food.name}</h3>
-
-                                {/* Rating */}
-                                <div className="flex items-center gap-1">
-                                    <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                                    <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{food.rating}</span>
-                                </div>
                             </div>
                         </motion.div>
                     ))}
                 </div>
+                )}
             </div>
         </section>
     );

@@ -9,12 +9,29 @@ import { Moon, Sun } from 'lucide-react'
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(true)
+  const [isOnline, setIsOnline] = useState(true)
 
   // Load dark mode preference from localStorage
   useEffect(() => {
     const savedMode = localStorage.getItem('darkMode')
     if (savedMode !== null) {
       setDarkMode(savedMode === 'true')
+    }
+  }, [])
+
+  // Detect online/offline status
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
     }
   }, [])
 
@@ -45,10 +62,28 @@ export default function Home() {
         }`}></div>
       </div>
 
-      <Navbar darkMode={darkMode} />
+      <Navbar darkMode={darkMode} isOnline={isOnline} />
       <HeroSection darkMode={darkMode} />
-      <FoodCarousel darkMode={darkMode} />
+      <FoodCarousel darkMode={darkMode} isOnline={isOnline} />
       
+      {/* Online/Offline Toggle Button */}
+      <button
+        onClick={() => setIsOnline(!isOnline)}
+        className={`fixed bottom-8 left-8 px-4 py-3 rounded-full shadow-2xl transition-all hover:scale-110 z-50 flex items-center gap-2 font-semibold ${
+          isOnline
+            ? darkMode
+              ? 'bg-green-600 text-white hover:bg-green-700 border border-green-500'
+              : 'bg-green-500 text-white hover:bg-green-600 border border-green-400'
+            : darkMode
+              ? 'bg-orange-600 text-white hover:bg-orange-700 border border-orange-500'
+              : 'bg-orange-500 text-white hover:bg-orange-600 border border-orange-400'
+        }`}
+        aria-label="Toggle online/offline mode"
+      >
+        <span className="text-lg">{isOnline ? '🌐' : '📡'}</span>
+        <span className="text-sm">{isOnline ? 'Online' : 'Offline'}</span>
+      </button>
+
       {/* Dark Mode Toggle Button */}
       <button
         onClick={toggleDarkMode}

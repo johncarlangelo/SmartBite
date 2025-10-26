@@ -860,7 +860,7 @@ export default function AnalyzePage() {
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                             >
-                                <History size={20} />
+                                <Save size={20} />
                                 Saved Analysis
                             </button>
                         </div>
@@ -943,8 +943,15 @@ export default function AnalyzePage() {
                             </div>
                         ) : (
                             /* Saved Analyses View */
-                            <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
-                                {savedAnalyses.map((saved, index) => (
+                            <div className="space-y-4">
+                                {savedAnalyses.length === 0 ? (
+                                    <div className={`text-center ${textSecondaryClass} py-12`}>
+                                        <Save size={48} className="mx-auto mb-4 opacity-50" />
+                                        <p>No saved analyses yet. Save your favorite dishes to see them here!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                                        {savedAnalyses.map((saved, index) => (
                                     <AnimatedHistoryItem key={saved.id} index={index} delay={0.1}>
                                         <div
                                             className={`${darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'} rounded-xl p-4 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} transition-all cursor-pointer group`}
@@ -989,6 +996,8 @@ export default function AnalyzePage() {
                                         </div>
                                     </AnimatedHistoryItem>
                                 ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
