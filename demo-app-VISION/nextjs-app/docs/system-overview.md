@@ -2,7 +2,36 @@
 
 ## Introduction
 
-SmartBite is an AI-powered food analysis application that identifies dishes, ingredients, nutritional information, and provides recipes from uploaded food images. The system combines modern web technologies with local AI processing to deliver a seamless user experience.
+SmartBite is an AI-powered food analysis application that uses a sophisticated 3-stage AI pipeline to identify dishes, analyze nutrition, generate recipes, and provide intelligent recommendations. The system combines modern web technologies with local AI processing (Ollama) to deliver a seamless, privacy-focused experience.
+
+## AI Model Pipeline (3-Stage Architecture)
+
+### Stage 1: Vision Analysis (llava:7b)
+**Purpose:** Image recognition ONLY  
+**Task:** Identify the dish from an uploaded image  
+**Output:**
+- Dish name (e.g., "Spaghetti Carbonara")
+- Cuisine type (e.g., "Italian", "Thai", "American")
+- Food validation & confidence score
+
+**Why llava:7b?** Optimized for visual understanding, fast at identifying food items.
+
+### Stage 2: Detailed Content Generation (llama3.2:1b)
+**Purpose:** Generate ALL detailed text content  
+**Input:** Dish name + cuisine type from Stage 1  
+**Output:**
+- **Nutrition Facts:** Calories, protein, carbs, fat
+- **Ingredients:** 8-12 specific ingredients
+- **Recipe:** Servings, prep/cook time, detailed steps
+
+**Why llama3.2?** Optimized for text generation, produces detailed accurate content.
+
+### Stage 3: Recommendations (llama3.2:1b)
+**Purpose:** Intelligent food suggestions  
+**Input:** Analysis results + user history  
+**Output:** 4-6 recommendations (similar dishes, healthier alternatives, seasonal suggestions, pairings)
+
+**Why llama3.2?** Excellent at reasoning and creative suggestions.
 
 ## Key Features
 
@@ -12,9 +41,10 @@ SmartBite is an AI-powered food analysis application that identifies dishes, ing
    - File type validation and error handling
 
 2. **AI Image Analysis**
-   - Integration with Ollama for local AI processing
-   - LLaVA vision model for image understanding
-   - Structured output of dish information, ingredients, nutrition, and recipes
+   - **Stage 1 (Vision):** llava:7b identifies dish name & cuisine type
+   - **Stage 2 (Text):** llama3.2:1b generates nutrition, ingredients, recipe
+   - **Stage 3 (Recommendations):** llama3.2:1b creates personalized suggestions
+   - Structured JSON output with validation
 
 3. **Duplicate Detection and Caching**
    - SHA-256 image hashing for duplicate identification

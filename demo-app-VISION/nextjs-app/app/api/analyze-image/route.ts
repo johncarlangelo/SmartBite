@@ -44,13 +44,20 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(arrayBuffer).toString('base64')
 
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+    
+    // Model Configuration:
+    // - llava:7b (Vision) - ONLY for image recognition: dish name & cuisine type
+    // - llama3.2:1b (Text) - For ALL text generation: nutrition, ingredients, recipe, recommendations
     const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava:7b'
-    const textModel = process.env.OLLAMA_RECOMMENDATION_MODEL || 'llama3.2:1b'
+    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:1b'
     const onlineModel = process.env.OLLAMA_ONLINE_MODEL || visionModel
     const visionModelToUse = offlineFlag === 'true' ? visionModel : onlineModel
 
     // ============================================
-    // STAGE 1: Vision Model (llava:7b) - Fast identification only
+    // STAGE 1: VISION MODEL (llava:7b)
+    // Purpose: Image recognition ONLY - identify dish name and cuisine type
+    // Why: llava:7b is optimized for vision tasks, fast at identifying food
+    // Output: dishName (e.g., "Spaghetti Carbonara"), cuisineType (e.g., "Italian")
     // ============================================
     const visionPrompt = [
       'You are a food identification AI. Look at this image and identify ONLY:',
@@ -107,7 +114,11 @@ export async function POST(req: NextRequest) {
     const cuisineType = visionResult.cuisineType || 'Mixed'
 
     // ============================================
-    // STAGE 2: Text Model (llama3.2:1b) - Detailed generation
+    // STAGE 2: TEXT MODEL (llama3.2:1b)
+    // Purpose: Generate ALL detailed text content
+    // Why: llama3.2 is optimized for text generation, produces better quality content
+    // Input: dishName + cuisineType from Stage 1
+    // Output: Detailed nutrition facts, ingredients list, cooking recipe
     // ============================================
     const detailPrompt = [
       `Generate detailed nutritional information, ingredients, and recipe for: "${dishName}" (${cuisineType} cuisine).`,
@@ -166,6 +177,10 @@ export async function POST(req: NextRequest) {
       isFood: true,
       confidenceFood: confidence
     }
+
+    // NOTE: STAGE 3 (Recommendations) happens separately via /api/recommendations
+    // The frontend will call that API endpoint with this analysis result
+    // Recommendations also use llama3.2:1b for text generation
 
     // Validation
     if (!parsed.dishName || !Array.isArray(parsed.ingredients) || !parsed.recipe || !parsed.nutrition) {

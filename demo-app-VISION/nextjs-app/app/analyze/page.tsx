@@ -125,6 +125,12 @@ export default function AnalyzePage() {
             setDarkMode(savedTheme === 'dark')
         }
 
+        // Load online status from localStorage
+        const savedOnlineStatus = localStorage.getItem('onlineStatus')
+        if (savedOnlineStatus !== null) {
+            setOffline(savedOnlineStatus === 'false') // Note: offline is inverse of online
+        }
+
         const recent = localStorage.getItem('recentAnalyses')
         if (recent) {
             setRecentAnalyses(JSON.parse(recent))
@@ -138,6 +144,18 @@ export default function AnalyzePage() {
         const unread = localStorage.getItem('unreadCount')
         if (unread) {
             setUnreadCount(parseInt(unread))
+        }
+
+        // Listen for online status changes from navbar
+        const handleOnlineStatusChange = (event: Event) => {
+            const customEvent = event as CustomEvent<boolean>
+            setOffline(!customEvent.detail) // offline is inverse of online
+        }
+
+        window.addEventListener('onlineStatusChanged', handleOnlineStatusChange)
+        
+        return () => {
+            window.removeEventListener('onlineStatusChanged', handleOnlineStatusChange)
         }
     }, [])
 
@@ -649,30 +667,29 @@ export default function AnalyzePage() {
                             </button>
 
                             <button
-                                onClick={() => setOffline(!offline)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${offline
+                                onClick={() => {
+                                    const newOfflineState = !offline;
+                                    setOffline(newOfflineState);
+                                    const newOnlineState = !newOfflineState;
+                                    localStorage.setItem('onlineStatus', String(newOnlineState));
+                                    window.dispatchEvent(new CustomEvent('onlineStatusChanged', { detail: newOnlineState }));
+                                }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all cursor-pointer hover:scale-105 ${
+                                    offline
                                         ? darkMode
-                                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                                            : 'bg-orange-100 text-orange-600 border border-orange-200'
+                                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 hover:bg-orange-500/30'
+                                            : 'bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100'
                                         : darkMode
-                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                            : 'bg-green-100 text-green-600 border border-green-200'
-                                    }`}
+                                            ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
+                                            : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
+                                }`}
                             >
-                                {offline ? <WifiOff size={18} /> : <Wifi size={18} />}
-                                <span className="text-sm font-medium hidden sm:inline">
+                                <span className={`w-2 h-2 rounded-full ${
+                                    offline ? 'bg-orange-500' : 'bg-green-500 animate-pulse'
+                                }`}></span>
+                                <span className="text-sm font-semibold">
                                     {offline ? 'Offline' : 'Online'}
                                 </span>
-                            </button>
-
-                            <button
-                                onClick={toggleTheme}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${darkMode
-                                        ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
-                                    }`}
-                            >
-                                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                             </button>
                         </div>
                     </div>
@@ -840,29 +857,134 @@ export default function AnalyzePage() {
                                             <Gauge className={darkMode ? 'text-green-400' : 'text-green-600'} size={28} />
                                             Nutrition Facts
                                         </h3>
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                                            {[
-                                                { label: 'Calories', value: result.nutrition.calories, unit: 'kcal', color: 'text-orange-400' },
-                                                { label: 'Protein', value: result.nutrition.protein_g, unit: 'g', color: 'text-blue-400' },
-                                                { label: 'Carbs', value: result.nutrition.carbs_g, unit: 'g', color: 'text-purple-400' },
-                                                { label: 'Fat', value: result.nutrition.fat_g, unit: 'g', color: 'text-yellow-400' },
-                                            ].map((item, index) => (
-                                                <motion.div
-                                                    key={item.label}
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ delay: 0.2 + index * 0.1, duration: 0.3 }}
-                                                    className={`p-6 rounded-xl ${darkMode ? 'bg-slate-800/50' : 'bg-white'}`}
-                                                >
-                                                    <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                                        {item.label}
-                                                    </p>
-                                                    <p className={`text-3xl font-bold ${item.color}`}>
-                                                        {item.value}
-                                                        <span className="text-sm ml-1">{item.unit}</span>
-                                                    </p>
-                                                </motion.div>
-                                            ))}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                            {/* Left side - Nutrition values */}
+                                            <div className="space-y-4">
+                                                {[
+                                                    { label: 'Calories', value: result.nutrition.calories, unit: 'kcal', color: 'text-orange-400', bgColor: darkMode ? 'bg-orange-500/20' : 'bg-orange-50', borderColor: darkMode ? 'border-orange-500/30' : 'border-orange-200' },
+                                                    { label: 'Protein', value: result.nutrition.protein_g, unit: 'g', color: 'text-blue-400', bgColor: darkMode ? 'bg-blue-500/20' : 'bg-blue-50', borderColor: darkMode ? 'border-blue-500/30' : 'border-blue-200' },
+                                                    { label: 'Carbs', value: result.nutrition.carbs_g, unit: 'g', color: 'text-purple-400', bgColor: darkMode ? 'bg-purple-500/20' : 'bg-purple-50', borderColor: darkMode ? 'border-purple-500/30' : 'border-purple-200' },
+                                                    { label: 'Fat', value: result.nutrition.fat_g, unit: 'g', color: 'text-yellow-400', bgColor: darkMode ? 'bg-yellow-500/20' : 'bg-yellow-50', borderColor: darkMode ? 'border-yellow-500/30' : 'border-yellow-200' },
+                                                ].map((item, index) => (
+                                                    <motion.div
+                                                        key={item.label}
+                                                        initial={{ opacity: 0, x: -20 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: 0.2 + index * 0.1, duration: 0.3 }}
+                                                        className={`p-4 rounded-xl ${item.bgColor} border ${item.borderColor} flex justify-between items-center`}
+                                                    >
+                                                        <p className={`text-lg font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                            {item.label}
+                                                        </p>
+                                                        <p className={`text-2xl font-bold ${item.color}`}>
+                                                            {item.value}
+                                                            <span className="text-sm ml-1">{item.unit}</span>
+                                                        </p>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+
+                                            {/* Right side - Pie Chart */}
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: 0.4, duration: 0.5 }}
+                                                className="flex flex-col items-center justify-center"
+                                            >
+                                                {/* Pie Chart with Labels */}
+                                                <div className="relative w-80 h-80">
+                                                    <svg viewBox="0 0 300 300" className="transform -rotate-90">
+                                                        {(() => {
+                                                            const total = result.nutrition.protein_g + result.nutrition.carbs_g + result.nutrition.fat_g;
+                                                            let currentAngle = 0;
+                                                            const colors = ['#60a5fa', '#c084fc', '#fbbf24']; // blue, purple, yellow
+                                                            const values = [result.nutrition.protein_g, result.nutrition.carbs_g, result.nutrition.fat_g];
+                                                            const labels = ['Protein', 'Carbs', 'Fat'];
+                                                            
+                                                            return values.map((value, index) => {
+                                                                const percentage = (value / total) * 100;
+                                                                const angle = (percentage / 100) * 360;
+                                                                const startAngle = currentAngle;
+                                                                const endAngle = currentAngle + angle;
+                                                                const midAngle = startAngle + angle / 2;
+                                                                
+                                                                currentAngle = endAngle;
+                                                                
+                                                                const startX = 150 + 100 * Math.cos((startAngle * Math.PI) / 180);
+                                                                const startY = 150 + 100 * Math.sin((startAngle * Math.PI) / 180);
+                                                                const endX = 150 + 100 * Math.cos((endAngle * Math.PI) / 180);
+                                                                const endY = 150 + 100 * Math.sin((endAngle * Math.PI) / 180);
+                                                                const largeArc = angle > 180 ? 1 : 0;
+                                                                
+                                                                // Calculate label position (outside the pie)
+                                                                const labelRadius = 130;
+                                                                const labelX = 150 + labelRadius * Math.cos((midAngle * Math.PI) / 180);
+                                                                const labelY = 150 + labelRadius * Math.sin((midAngle * Math.PI) / 180);
+                                                                
+                                                                const pathData = [
+                                                                    `M 150 150`,
+                                                                    `L ${startX} ${startY}`,
+                                                                    `A 100 100 0 ${largeArc} 1 ${endX} ${endY}`,
+                                                                    'Z'
+                                                                ].join(' ');
+                                                                
+                                                                return (
+                                                                    <g key={index}>
+                                                                        <motion.path
+                                                                            d={pathData}
+                                                                            fill={colors[index]}
+                                                                            opacity={0.8}
+                                                                            initial={{ opacity: 0 }}
+                                                                            animate={{ opacity: 0.8 }}
+                                                                            transition={{ delay: 0.5 + index * 0.1, duration: 0.3 }}
+                                                                        />
+                                                                        {/* Label text */}
+                                                                        <g transform={`rotate(90 ${labelX} ${labelY})`}>
+                                                                            <motion.text
+                                                                                x={labelX}
+                                                                                y={labelY}
+                                                                                textAnchor="middle"
+                                                                                className={`text-sm font-bold ${darkMode ? 'fill-white' : 'fill-gray-900'}`}
+                                                                                initial={{ opacity: 0 }}
+                                                                                animate={{ opacity: 1 }}
+                                                                                transition={{ delay: 0.7 + index * 0.1, duration: 0.3 }}
+                                                                            >
+                                                                                {labels[index]}
+                                                                            </motion.text>
+                                                                            <motion.text
+                                                                                x={labelX}
+                                                                                y={labelY + 16}
+                                                                                textAnchor="middle"
+                                                                                className={`text-xs font-semibold`}
+                                                                                fill={colors[index]}
+                                                                                initial={{ opacity: 0 }}
+                                                                                animate={{ opacity: 1 }}
+                                                                                transition={{ delay: 0.8 + index * 0.1, duration: 0.3 }}
+                                                                            >
+                                                                                {value}g ({percentage.toFixed(1)}%)
+                                                                            </motion.text>
+                                                                        </g>
+                                                                    </g>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </svg>
+                                                    {/* Center circle for donut effect with Calories */}
+                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
+                                                        <div className="text-center">
+                                                            <p className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                                {result.nutrition.calories}
+                                                            </p>
+                                                            <p className={`text-xs font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                                kcal
+                                                            </p>
+                                                            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                Calories
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
                                         </div>
                                     </div>
                                 </AnimatedSection>
@@ -992,7 +1114,7 @@ export default function AnalyzePage() {
                     onClick={handleCloseHistory}
                 >
                     <div
-                        className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border shadow-2xl`}
+                        className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto scrollbar-hide border shadow-2xl`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-6">
@@ -1055,7 +1177,7 @@ export default function AnalyzePage() {
                                         <p className={`${textSecondaryClass} text-sm mb-4`}>
                                             Showing your {Math.min(recentAnalyses.length, 3)} most recently analyzed {recentAnalyses.length === 1 ? 'dish' : 'dishes'}
                                         </p>
-                                        <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                                        <div className="space-y-4 max-h-[60vh] overflow-y-auto scrollbar-hide pr-2">
                                             {recentAnalyses
                                                 .sort((a, b) => new Date(b.analyzedAt).getTime() - new Date(a.analyzedAt).getTime())
                                                 .slice(0, 3)
@@ -1127,7 +1249,7 @@ export default function AnalyzePage() {
                                         <p>No saved analyses yet. Save your favorite dishes to see them here!</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto scrollbar-hide pr-2">
                                         {savedAnalyses.map((saved, index) => (
                                     <AnimatedHistoryItem key={saved.id} index={index} delay={0.1}>
                                         <div

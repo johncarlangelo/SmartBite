@@ -46,8 +46,15 @@ export async function POST(req: NextRequest) {
     const { type, currentDish, recentDishes, month, offline } = body
 
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
-    // Use faster text-only model for recommendations (llama3.2:1b is 3-5x faster)
-    const textModel = process.env.OLLAMA_RECOMMENDATION_MODEL || 'llama3.2:1b'
+    
+    // ============================================
+    // STAGE 3: TEXT MODEL (llama3.2:1b) - Recommendations
+    // Purpose: Generate food recommendations based on analyzed dishes
+    // Why: llama3.2 excels at reasoning and generating creative suggestions
+    // Input: Current dish analysis and/or recent dishes history
+    // Output: Similar dishes, healthier alternatives, seasonal suggestions, pairings
+    // ============================================
+    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:1b'
 
     let prompt = ''
     

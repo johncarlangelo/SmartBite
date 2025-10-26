@@ -1,7 +1,7 @@
 'use client'
 
-import { motion } from 'motion/react'
-import { useState } from 'react'
+import { motion, useInView } from 'motion/react'
+import { useRef } from 'react'
 
 type RecommendedDish = {
     name: string
@@ -176,7 +176,6 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
     }
 
     const recommendations = generateRecommendations(ingredients)
-    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
     return (
         <div className="mt-8">
@@ -203,88 +202,65 @@ export default function RecommendedDishes({ ingredients, darkMode }: Recommended
                     <motion.div
                         key={index}
                         initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
                         transition={{ delay: index * 0.05, duration: 0.3 }}
-                        onHoverStart={() => setHoveredIndex(index)}
-                        onHoverEnd={() => setHoveredIndex(null)}
                         className={`
-                            relative rounded-xl shadow-md cursor-pointer
-                            transition-all duration-500 ease-in-out
+                            rounded-xl shadow-md
+                            transition-all duration-300
                             ${darkMode 
                                 ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50' 
                                 : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
                             }
                             hover:shadow-xl
                         `}
-                        style={{
-                            // Fixed height to prevent layout shifts
-                            minHeight: hoveredIndex === index ? '240px' : '140px',
-                        }}
                     >
                         <div className="p-5">
-                            {/* Always visible content */}
+                            {/* Dish name and description */}
                             <h4 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                 {dish.name}
                             </h4>
-                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {dish.description}
                             </p>
 
-                            {/* Expanded content with animation */}
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{
-                                    opacity: hoveredIndex === index ? 1 : 0,
-                                    height: hoveredIndex === index ? 'auto' : 0,
-                                }}
-                                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                                className="overflow-hidden"
-                            >
-                                <motion.div
-                                    initial={{ y: -10 }}
-                                    animate={{ 
-                                        y: hoveredIndex === index ? 0 : -10,
-                                    }}
-                                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                                    className="mt-4 pt-4 border-t border-opacity-20 space-y-2"
-                                    style={{
-                                        borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
-                                    }}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                            Approximate Calories:
-                                        </span>
-                                        <span className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
-                                            {dish.calories} kcal
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                            Cuisine Type:
-                                        </span>
-                                        <span className={`text-sm font-semibold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                                            {dish.cuisine}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`}>
-                                            Allergens:
-                                        </span>
-                                        <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                                            {dish.allergens.length > 0 ? dish.allergens.join(', ') : 'None'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                            Halal:
-                                        </span>
-                                        <span className={`text-sm font-semibold ${dish.isHalal ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
-                                            {dish.isHalal ? 'Yes' : 'No'}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
+                            {/* Always visible information */}
+                            <div className="pt-4 border-t space-y-2" style={{
+                                borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                            }}>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Calories:
+                                    </span>
+                                    <span className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                        {dish.calories} kcal
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Cuisine:
+                                    </span>
+                                    <span className={`text-sm font-semibold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                        {dish.cuisine}
+                                    </span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`}>
+                                        Allergens:
+                                    </span>
+                                    <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                                        {dish.allergens.length > 0 ? dish.allergens.join(', ') : 'None'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Halal:
+                                    </span>
+                                    <span className={`text-sm font-semibold ${dish.isHalal ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
+                                        {dish.isHalal ? 'Yes' : 'No'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 ))}
