@@ -1,6 +1,6 @@
 # 0003_SmartBite
 
-SmartBite is a computer vision web app that identifies a dish from a photo, lists ingredients, estimates nutrition, and provides a recipe guide. Works online and offline with local Ollama.
+SmartBite is a computer vision web app that identifies a dish from a photo, lists ingredients, estimates nutrition, provides a recipe guide, and generates AI recommendation. Works online and offline with local Ollama.
 
 ## Getting Started
 
