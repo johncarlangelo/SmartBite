@@ -91,7 +91,7 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
   }
 
   const handleExternalSearch = (type: 'google' | 'youtube' | 'allrecipes') => {
-    const query = encodeURIComponent(`${dishName} ${cuisineType} recipe`)
+    const query = encodeURIComponent(`${dishName} recipe`)
     const urls = {
       google: `https://www.google.com/search?q=${query}`,
       youtube: `https://www.youtube.com/results?search_query=${query}+recipe`,
