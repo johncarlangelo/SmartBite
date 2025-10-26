@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useState, useEffect } from 'react'
 import { Sparkles, TrendingUp, Calendar, Wine, Loader2, ChevronRight, Star, Flame, Clock, Award } from 'lucide-react'
 import RecipeModal from './RecipeModal'
+import LoadingWithFacts from './LoadingWithFacts'
+import { SkeletonGrid } from './SkeletonCard'
 
 type Nutrition = {
   calories: number
@@ -93,6 +95,8 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
 
   // Load all recommendations on mount
   useEffect(() => {
+    // Show component immediately
+    setIsVisible(true)
     loadAllRecommendations()
   }, [])
 
@@ -103,8 +107,6 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
     await Promise.all(
       categoriesToLoad.map(category => loadRecommendations(category))
     )
-    
-    setIsVisible(true)
   }
 
   const loadRecommendations = async (category: string) => {
@@ -175,11 +177,6 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
     }
   }
 
-  // Don't render anything until at least one category is loaded
-  if (!isVisible) {
-    return null
-  }
-
   const currentData = categoryData[activeCategory]
 
   return (
@@ -227,13 +224,13 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`flex flex-col items-center justify-center py-16 ${
-              darkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}
+            className="space-y-8"
           >
-            <Loader2 size={48} className="animate-spin mb-4" />
-            <p className="text-lg font-medium">Generating recommendations...</p>
-            <p className="text-sm mt-2">Our AI is thinking of perfect dishes for you</p>
+            <LoadingWithFacts
+              darkMode={darkMode}
+              message="Discovering delicious recommendations..."
+            />
+            <SkeletonGrid count={3} type="recommendation" darkMode={darkMode} />
           </motion.div>
         ) : currentData.error ? (
           <motion.div

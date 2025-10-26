@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { X, Clock, Users, ChefHat, Flame, Search, Youtube, Sparkles, ExternalLink } from 'lucide-react'
+import LoadingWithFacts from './LoadingWithFacts'
 
 type RecipeData = {
   dishName: string
@@ -189,15 +190,10 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
           {activeTab === 'recipe' && (
             <>
               {isLoading && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Sparkles className="w-12 h-12 text-purple-400 animate-pulse mb-4" />
-                  <p className={`${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                    Generating recipe with AI...
-                  </p>
-                  <p className={`text-sm mt-2 ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                    This may take 3-5 seconds
-                  </p>
-                </div>
+                <LoadingWithFacts
+                  darkMode={darkMode}
+                  message="Creating your personalized recipe..."
+                />
               )}
 
               {error && (

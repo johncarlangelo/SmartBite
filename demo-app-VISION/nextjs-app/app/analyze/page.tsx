@@ -6,7 +6,10 @@ import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
 import RecommendedDishes from '@/components/RecommendedDishes'
+import AnimatedList from '@/components/AnimatedList'
 import AIRecommendations from '@/components/AIRecommendations'
+import LoadingWithFacts from '@/components/LoadingWithFacts'
+import { ResultsSkeleton } from '@/components/SkeletonCard'
 
 
 type Nutrition = {
@@ -590,28 +593,23 @@ export default function AnalyzePage() {
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="mt-8 space-y-4"
+                                    className="mt-8"
                                 >
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {analysisStage}
-                                        </span>
-                                        <span className={`font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                                            {progress}%
-                                        </span>
-                                    </div>
-                                    <div className={`h-3 rounded-full overflow-hidden ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                                        <motion.div
-                                            className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${progress}%` }}
-                                            transition={{ duration: 0.3 }}
-                                        />
-                                    </div>
+                                    <LoadingWithFacts
+                                        darkMode={darkMode}
+                                        message={analysisStage || "Analyzing your food..."}
+                                        showProgress={true}
+                                        progress={progress}
+                                    />
                                 </motion.div>
                             )}
                         </div>
                     </motion.div>
+
+                    {/* Skeleton Results Section - Show while analyzing */}
+                    {isAnalyzing && selectedImage && (
+                        <ResultsSkeleton darkMode={darkMode} />
+                    )}
 
                     {/* Results Section */}
                     {result && (
