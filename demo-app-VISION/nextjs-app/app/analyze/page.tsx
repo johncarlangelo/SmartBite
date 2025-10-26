@@ -396,6 +396,11 @@ export default function AnalyzePage() {
     const textSecondaryClass = darkMode ? 'text-gray-400' : 'text-gray-600'
     const buttonPrimaryClass = darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
 
+    // Check if current result is already saved
+    const isAlreadySaved = !!(result && selectedImage && savedAnalyses.some(
+        (saved) => saved.dishName === result.dishName && saved.imageUrl === selectedImage
+    ))
+
     // Close history handler
     const handleCloseHistory = () => {
         setShowHistory(false)
@@ -632,13 +637,18 @@ export default function AnalyzePage() {
                                         </div>
                                         <button
                                             onClick={saveAnalysis}
-                                            disabled={savedSuccess}
-                                            className={`p-3 rounded-xl transition-all ${savedSuccess
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : darkMode
-                                                        ? 'bg-slate-700/50 hover:bg-slate-600 text-white'
-                                                        : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-                                                }`}
+                                            disabled={savedSuccess || isAlreadySaved}
+                                            className={`p-3 rounded-xl transition-all ${
+                                                savedSuccess
+                                                    ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
+                                                    : isAlreadySaved
+                                                        ? darkMode
+                                                            ? 'bg-slate-700/30 text-slate-500 cursor-not-allowed'
+                                                            : 'bg-gray-200/50 text-gray-400 cursor-not-allowed'
+                                                        : darkMode
+                                                            ? 'bg-slate-700/50 hover:bg-slate-600 text-white'
+                                                            : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                                            }`}
                                         >
                                             <Save size={20} />
                                         </button>
