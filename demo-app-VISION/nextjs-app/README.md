@@ -13,6 +13,7 @@ SmartBite is a Next.js application that uses AI to analyze food images and provi
 ### 🔍 Analysis Page
 - **Instant AI Analysis**: Upload food images for immediate AI-powered insights
 - **Fast Processing**: Optimized with 1.1s progress animation and auto-trigger on upload
+- **Multi-Model AI**: Uses llava:7b for image analysis and llama3.2:1b for fast text generation
 - **Comprehensive Results Display**:
   - Dish name and cuisine type identification
   - Complete ingredient list with visual tags
@@ -20,6 +21,21 @@ SmartBite is a Next.js application that uses AI to analyze food images and provi
   - Step-by-step recipe with prep and cook times
 - **Smooth Animations**: Scale-in animations for all result cards
 - **Optimized Layout**: Clean vertical column layout with 95% card width
+
+### 🤖 AI Recommendations Engine
+- **Smart Recommendations**: AI-powered dish suggestions based on your analyzed food
+- **Three Categories**:
+  - **Healthier Alternatives**: Nutritious versions of your dish
+  - **Seasonal Picks**: Dishes using seasonal ingredients
+  - **Perfect Pairings**: Complementary dishes and sides
+- **Performance Optimized**: Pre-loads all categories for instant switching (no reload)
+- **Detailed Recipe View**: Click "Learn More" for comprehensive recipe information
+- **Recipe Modal Features**:
+  - AI-generated recipes with ingredients, instructions, nutrition, and tips
+  - External search options (Google, YouTube, AllRecipes)
+  - On-demand generation with caching for instant reopening
+  - Beautiful two-tab interface with loading animations
+- **Consistent UI**: Professional card layout with glassmorphism effects
 
 ### 📚 History Feature
 - **Dual-Tab System**:
@@ -58,7 +74,9 @@ SmartBite is a Next.js application that uses AI to analyze food images and provi
 - **Icons**: Lucide React
 - **Backend**: Next.js API Routes
 - **Database**: SQLite with better-sqlite3
-- **AI Processing**: Ollama with LLaVA 7B vision model
+- **AI Processing**: Ollama with multi-model setup
+  - **llava:7b** (4.7GB) - Vision model for image analysis
+  - **llama3.2:1b** (1.3GB) - Fast text generation for recommendations and recipes (3-5x faster)
 - **State Management**: React useState + localStorage
 - **Deployment**: Docker-ready with PM2 process management support
 
@@ -141,7 +159,7 @@ git clone https://github.com/johncarlangelo/SmartBite.git
 cd SmartBite/demo-app-VISION/nextjs-app
 ```
 
-### 2. Install Ollama AI Model
+### 2. Install Ollama AI Models
 
 ```bash
 # Start Ollama service (if not running automatically)
@@ -152,7 +170,10 @@ cd SmartBite/demo-app-VISION/nextjs-app
 # Pull the LLaVA 7B vision model (required for image analysis)
 ollama pull llava:7b
 
-# Verify the model is installed
+# Pull the Llama 3.2 1B model (required for recommendations and recipes)
+ollama pull llama3.2:1b
+
+# Verify the models are installed
 ollama list
 ```
 
@@ -185,8 +206,14 @@ Create a `.env.local` file in the `nextjs-app` directory:
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_VISION_MODEL=llava:7b
+OLLAMA_RECOMMENDATION_MODEL=llama3.2:1b
 OLLAMA_ONLINE_MODEL=llava:7b
 ```
+
+**Model Configuration**:
+- `OLLAMA_VISION_MODEL`: Used for analyzing food images (llava:7b)
+- `OLLAMA_RECOMMENDATION_MODEL`: Used for generating recommendations and recipes (llama3.2:1b - 3-5x faster)
+- `OLLAMA_ONLINE_MODEL`: Fallback model for online mode
 
 ### 5. Run the Development Server
 
@@ -240,14 +267,22 @@ nextjs-app/
 │   ├── analyze/
 │   │   └── page.tsx             # Analysis page (main feature)
 │   └── api/
-│       └── analyze-image/
-│           └── route.ts         # API endpoint for image analysis
+│       ├── analyze-image/
+│       │   └── route.ts         # API endpoint for image analysis
+│       ├── recommendations/
+│       │   └── route.ts         # API endpoint for AI recommendations
+│       ├── generate-recipe/
+│       │   └── route.ts         # API endpoint for recipe generation
+│       └── check-cache/
+│           └── route.ts         # API endpoint for cache checking
 ├── components/
 │   ├── Navbar.tsx               # Navigation (dark/light mode support)
 │   ├── HeroSection.tsx          # Hero with animations
 │   ├── FoodCarousel.tsx         # Food showcase carousel
 │   ├── GridMotion.tsx           # Animated grid background
-│   └── AnimatedList.tsx         # Reusable animated list
+│   ├── AnimatedList.tsx         # Reusable animated list
+│   ├── AIRecommendations.tsx    # AI recommendations with 3 categories
+│   └── RecipeModal.tsx          # Recipe details modal with AI + search
 ├── lib/
 │   └── utils.ts                 # Utility functions
 ├── public/
@@ -267,15 +302,29 @@ Detailed documentation is available in the [docs](docs/) folder:
 - [API Documentation](docs/api-documentation.md) - Details of all API endpoints
 - [Database Schema](docs/database-schema.md) - Database structure and design
 - [Frontend Architecture](docs/frontend-architecture.md) - UI components and state management
+- [AI Recommendations Feature](docs/ai-recommendations-feature.md) - AI recommendations engine documentation
+- [Recipe Modal Feature](docs/recipe-modal-feature.md) - Recipe modal implementation details
+- [Multi-Model Setup](docs/MULTI-MODEL-SETUP.md) - Multi-model configuration guide
 - [Deployment Guide](docs/deployment-guide.md) - How to deploy and configure the application
 
 ## 🔧 Recent Changes & Updates (Latest Release)
+
+### 🤖 AI Recommendations Engine (NEW!)
+- ✅ Implemented **AI-powered recommendations** with 3 categories
+- ✅ **Multi-model optimization**: llava:7b for images, llama3.2:1b for recommendations (3-5x faster)
+- ✅ **Pre-loading all categories** for instant switching (no reload on tab change)
+- ✅ **Recipe Modal** with on-demand generation and caching
+- ✅ **Hybrid approach**: AI-generated recipes + external search links
+- ✅ **Consistent button layout** with flexbox (mt-auto)
+- ✅ Component appears only after successful generation
 
 ### ⚡ Performance Optimizations
 - ✅ Reduced analysis progress animation from **7.5s to 1.1s** (85% faster)
 - ✅ Reduced result display delay from **500ms to 100ms**
 - ✅ **Auto-trigger analysis** on image upload (removed manual "Analyze" button)
 - ✅ Fixed data.analysis bug in API response handling
+- ✅ Timeout handling with **120s abort controller**
+- ✅ Recommendations generate **3-5x faster** with smaller model
 
 ### 🎨 Layout & UI Updates
 - ✅ Changed analyze page from **side-by-side grid to vertical column layout**
@@ -297,6 +346,15 @@ Detailed documentation is available in the [docs](docs/) folder:
 - ✅ **Animated list items** with staggered delays (0.05s between items)
 - ✅ **Smart gradient overlays** (show only when 3+ steps)
 - ✅ Custom scrollbar matching overall theme
+
+### 📋 Recipe Modal Feature
+- ✅ **Two-tab interface**: AI Recipe + Find Online
+- ✅ **On-demand generation**: Recipes generated only when "Learn More" is clicked
+- ✅ **Caching strategy**: Instant reopening with cached data
+- ✅ **External search links**: Google, YouTube, AllRecipes integration
+- ✅ **Beautiful loading animations** with glassmorphism
+- ✅ **Detailed recipe view**: Ingredients, instructions, nutrition, tips
+- ✅ **Error handling** with retry functionality
 
 ### 🌓 Dark/Light Mode
 - ✅ Added **persistent dark/light mode toggle** on landing page
@@ -331,6 +389,10 @@ Added global scrollbar styles in `globals.css`:
    - Complete ingredient list with visual tags
    - Nutrition facts in organized 4-column grid
    - Step-by-step recipe (scrollable if many steps)
+5. Scroll down to see **AI Recommendations** (appears after analysis):
+   - Browse three categories: Healthier Alternatives, Seasonal Picks, Perfect Pairings
+   - Click "Learn More" to see detailed recipes
+   - Switch categories instantly (all pre-loaded)
 
 ### Managing History
 1. Click the **History** button (top-right corner, shows unread count badge)
@@ -347,6 +409,18 @@ Added global scrollbar styles in `globals.css`:
 1. After analyzing a dish, look for the **star icon** in results
 2. Click to save to your **Saved** tab
 3. Access saved items anytime from **History → Saved** tab
+
+### Using AI Recommendations
+1. After analyzing a food image, scroll down to **AI Recommendations** section
+2. Browse through three categories using the tabs:
+   - **Healthier Alternatives**: Lighter, more nutritious versions
+   - **Seasonal Picks**: Dishes using fresh seasonal ingredients
+   - **Perfect Pairings**: Complementary dishes and sides
+3. Click **"Learn More"** on any recommendation to open the recipe modal
+4. In the modal:
+   - View AI-generated recipe details (ingredients, instructions, nutrition, tips)
+   - Switch to "Find Online" tab for external search links
+   - Close and reopen for instant cached results
 
 ### Switching Themes
 1. Look for the **floating button** in bottom-right corner of landing page
@@ -368,11 +442,15 @@ npm run dev
 # Ensure Ollama is running
 ollama serve
 
-# Check if model is installed
+# Check if models are installed
 ollama list
 
-# Pull model if missing
+# Pull models if missing
 ollama pull llava:7b
+ollama pull llama3.2:1b
+
+# Test model response
+ollama run llama3.2:1b "Hello"
 ```
 
 ### Build Errors
@@ -423,6 +501,7 @@ git clone https://github.com/johncarlangelo/SmartBite.git
 cd SmartBite/demo-app-VISION/nextjs-app
 npm install
 ollama pull llava:7b
+ollama pull llama3.2:1b
 npm run dev
 
 # Daily development
@@ -477,6 +556,12 @@ npm run start
 - `savedAnalyses` - Saved favorites (array)
 - `historyView` - Current history tab selection ('recent' | 'saved')
 - `unreadCount` - Count of unread history items (number)
+
+### AI Models Configuration
+- **llava:7b** (4.7GB): Vision model for analyzing food images
+- **llama3.2:1b** (1.3GB): Fast text model for recommendations and recipes
+- Both models run locally via Ollama (no internet required)
+- Multi-model setup reduces recommendation generation time by 3-5x
 
 ### API Configuration
 - The analyze-image API endpoint may need configuration for production deployment

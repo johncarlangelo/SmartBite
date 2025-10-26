@@ -16,6 +16,7 @@ This document provides a comprehensive summary of the SmartBite system, covering
   - Dark/light mode toggle
   - History tracking with localStorage
   - Animated UI components
+  - AI-powered recommendations engine
 
 ### 2. AI Processing
 - **Runtime**: Ollama local AI service
@@ -37,6 +38,7 @@ This document provides a comprehensive summary of the SmartBite system, covering
 ### 4. API Endpoints
 - **Check Cache**: `/api/check-cache` - Determines if image has been previously analyzed
 - **Analyze Image**: `/api/analyze-image` - Processes images with AI and caches results
+- **Recommendations**: `/api/recommendations` - Generates personalized dish recommendations using AI
 
 ### 5. Database
 - **Type**: SQLite
@@ -60,17 +62,24 @@ This document provides a comprehensive summary of the SmartBite system, covering
 - **Duplicate Detection**: SHA-256 hashing ensures identical images are recognized regardless of filename
 - **Instant Loading**: Cached results load immediately without AI processing
 - **Progress Indicators**: Visual feedback during AI analysis
+- **Smart Recommendations**: AI-powered suggestions based on user patterns
 
 ### Consistency
 - **Guaranteed Results**: Same image always produces identical analysis
 - **Cross-Device Access**: Cached results available from any device accessing the application
 - **Persistence**: Results survive browser cleanup
+- **Personalized Experience**: Recommendations adapt to user preferences over time
 
 ### User Experience
 - **Responsive Design**: Works on mobile, tablet, and desktop
 - **Theme Support**: Dark/light mode with localStorage persistence
 - **History Tracking**: Save and revisit previous analyses
 - **Error Handling**: Clear error messages and recovery options
+- **AI Recommendations**: 4 types of personalized dish suggestions
+  - **Similar Dishes**: Based on analysis history
+  - **Healthier Alternatives**: Better nutritional options
+  - **Seasonal Picks**: Current season's best dishes
+  - **Perfect Pairings**: Complementary sides and drinks
 
 ## Deployment Options
 
@@ -98,15 +107,27 @@ This document provides a comprehensive summary of the SmartBite system, covering
 - **Data Isolation**: Analysis data contains no personal information
 - **Access Control**: No authentication required for local use
 
+## Recent Updates
+
+### AI Recommendations Engine (October 2025)
+- **New Component**: `AIRecommendations.tsx` for intelligent suggestions
+- **New API**: `/api/recommendations` endpoint with 4 recommendation types
+- **Database Enhancement**: Methods for pattern recognition and history analysis
+- **Smart Prompts**: Engineered prompts for high-quality AI responses
+- **Beautiful UI**: Animated cards with category tabs and visual indicators
+
 ## Future Improvements
 
-1. **Enhanced Caching**: Cache expiration and invalidation
+1. **Enhanced Caching**: Cache expiration and invalidation for recommendations
 2. **Distributed Storage**: Redis or other distributed caching solutions
 3. **Image Preprocessing**: Normalize images before hashing
 4. **Analytics**: Track usage patterns and popular dishes
 5. **Component Restructuring**: Break down large page component into smaller modules
 6. **Testing**: Implement comprehensive test suite
 7. **Internationalization**: Support for multiple languages
+8. **Recommendation Learning**: Machine learning for better suggestion accuracy
+9. **User Feedback**: Like/dislike system for recommendations
+10. **Dietary Filters**: Vegetarian, vegan, gluten-free recommendation options
 
 ## Technical Debt
 

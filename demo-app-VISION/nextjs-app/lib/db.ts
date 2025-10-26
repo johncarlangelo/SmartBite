@@ -74,6 +74,28 @@ class DatabaseService {
     return stmt.all() as AnalysisRecord[];
   }
   
+  // Get recent analyses (for recommendations)
+  getRecentAnalyses(limit: number = 10): AnalysisRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM analyses ORDER BY createdAt DESC LIMIT ?');
+    return stmt.all(limit) as AnalysisRecord[];
+  }
+  
+  // Get analyses by cuisine type (for pattern recognition)
+  getAnalysesByCuisine(cuisineType: string): AnalysisRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM analyses WHERE json_extract(analysis, "$.cuisineType") = ? ORDER BY createdAt DESC');
+    return stmt.all(cuisineType) as AnalysisRecord[];
+  }
+  
+  // Get analyses within calorie range (for recommendations)
+  getAnalysesByCalorieRange(minCal: number, maxCal: number): AnalysisRecord[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM analyses 
+      WHERE CAST(json_extract(analysis, '$.nutrition.calories') AS INTEGER) BETWEEN ? AND ?
+      ORDER BY createdAt DESC
+    `);
+    return stmt.all(minCal, maxCal) as AnalysisRecord[];
+  }
+  
   // Close the database connection
   close(): void {
     this.db.close();

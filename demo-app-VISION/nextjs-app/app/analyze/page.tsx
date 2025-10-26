@@ -6,6 +6,7 @@ import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
 import RecommendedDishes from '@/components/RecommendedDishes'
+import AIRecommendations from '@/components/AIRecommendations'
 
 
 type Nutrition = {
@@ -800,6 +801,15 @@ export default function AnalyzePage() {
                                     <RecommendedDishes 
                                         ingredients={result.ingredients} 
                                         darkMode={darkMode}
+                                    />
+                                </AnimatedSection>
+
+                                {/* AI Recommendations */}
+                                <AnimatedSection delay={0.5}>
+                                    <AIRecommendations 
+                                        currentDish={result}
+                                        darkMode={darkMode}
+                                        offline={offline}
                                     />
                                 </AnimatedSection>
                             </div>
