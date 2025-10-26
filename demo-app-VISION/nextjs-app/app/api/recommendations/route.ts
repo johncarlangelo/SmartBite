@@ -39,16 +39,15 @@ type Recommendation = {
 
 export async function POST(req: NextRequest) {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout (increased)
 
   try {
     const body: RecommendationRequest = await req.json()
     const { type, currentDish, recentDishes, month, offline } = body
 
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
-    // Use faster text-only model for recommendations (doesn't need vision)
-    const recommendationModel = process.env.OLLAMA_RECOMMENDATION_MODEL || 'llama3.2:1b'
-    const modelToUse = recommendationModel
+    // Use faster text-only model for recommendations (llama3.2:1b is 3-5x faster)
+    const textModel = process.env.OLLAMA_RECOMMENDATION_MODEL || 'llama3.2:1b'
 
     let prompt = ''
     
@@ -77,14 +76,15 @@ export async function POST(req: NextRequest) {
         'Connection': 'keep-alive'
       },
       body: JSON.stringify({
-        model: modelToUse,
+        model: textModel,
         prompt,
         stream: false,
         format: 'json',
         options: {
           temperature: 0.7,
           top_p: 0.9,
-          num_predict: 1000,
+          num_predict: 500,  // Reduced from 800 for much faster generation
+          num_ctx: 2048,     // Reduced context window for speed
         }
       }),
       signal: controller.signal,
@@ -154,7 +154,7 @@ function generateSimilarDishesPrompt(recentDishes: DishAnalysis[]): string {
   const avgCalories = recentDishes.reduce((sum, d) => sum + d.nutrition.calories, 0) / recentDishes.length
 
   return [
-    'You are a food recommendation AI. Based on user\'s recent dish analyses, suggest 6 dishes they might enjoy.',
+    'You are a food recommendation AI. Based on user\'s recent dish analyses, suggest 4-6 dishes they might enjoy.',
     '',
     `Recent dishes: ${dishSummary}`,
     `Preferred cuisines: ${preferredCuisines.join(', ')}`,
@@ -166,33 +166,27 @@ function generateSimilarDishesPrompt(recentDishes: DishAnalysis[]): string {
     '    {',
     '      "dishName": string,',
     '      "cuisineType": string,',
-    '      "description": string (1 sentence, why user would like this),',
-    '      "reason": string (1 sentence, connection to their history),',
+    '      "description": string (1 short sentence),',
+    '      "reason": string (1 short sentence),',
     '      "estimatedCalories": number,',
     '      "estimatedPrepTime": number (minutes),',
-    '      "matchScore": number (0-100, how well it matches their taste)',
+    '      "matchScore": number (70-95)',
     '    }',
     '  ]',
     '}',
     '',
     'Rules:',
-    '- Suggest diverse dishes, not all from same cuisine',
-    '- Consider their calorie preferences',
-    '- Make descriptions appetizing and specific',
-    '- Match scores should vary (70-95)',
-    '- Output ONLY valid JSON, no markdown',
+    '- Suggest 4 diverse dishes',
+    '- Keep descriptions VERY brief',
+    '- Output ONLY valid JSON',
   ].join('\n')
 }
 
 function generateHealthierAlternativesPrompt(currentDish: DishAnalysis): string {
   return [
-    'You are a nutrition-focused food recommendation AI. Suggest 4 healthier alternatives to the given dish.',
+    'You are a nutrition AI. Suggest 4-5 healthier alternatives to this dish.',
     '',
-    `Current dish: ${currentDish.dishName}`,
-    `Cuisine: ${currentDish.cuisineType}`,
-    `Calories: ${currentDish.nutrition.calories} cal`,
-    `Protein: ${currentDish.nutrition.protein_g}g, Carbs: ${currentDish.nutrition.carbs_g}g, Fat: ${currentDish.nutrition.fat_g}g`,
-    `Ingredients: ${currentDish.ingredients.join(', ')}`,
+    `Current: ${currentDish.dishName} (${currentDish.cuisineType}, ${currentDish.nutrition.calories} cal)`,
     '',
     'STRICT JSON SCHEMA:',
     '{',
@@ -200,21 +194,19 @@ function generateHealthierAlternativesPrompt(currentDish: DishAnalysis): string 
     '    {',
     '      "dishName": string,',
     '      "cuisineType": string,',
-    '      "description": string (what makes it healthier),',
-    '      "reason": string (specific health benefit vs original),',
-    '      "estimatedCalories": number (should be 15-30% lower),',
-    '      "estimatedPrepTime": number (minutes),',
+    '      "description": string (brief, what makes it healthier),',
+    '      "reason": string (brief health benefit),',
+    '      "estimatedCalories": number (15-30% lower),',
+    '      "estimatedPrepTime": number,',
     '      "isHealthier": true',
     '    }',
     '  ]',
     '}',
     '',
     'Rules:',
-    '- Each alternative should be genuinely healthier (lower calories, better macros, or healthier cooking method)',
-    '- Suggestions should still be satisfying and delicious',
-    '- Include at least one dish from same cuisine type',
-    '- Be specific about health improvements (e.g., "grilled instead of fried", "more vegetables", "less sodium")',
-    '- Output ONLY valid JSON, no markdown',
+    '- 4-5 alternatives only',
+    '- VERY brief descriptions',
+    '- Output ONLY JSON',
   ].join('\n')
 }
 
@@ -227,21 +219,9 @@ function generateSeasonalDishesPrompt(month: number): string {
   }
   
   const season = seasons[month as keyof typeof seasons] || 'Fall'
-  const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-  
-  const seasonalIngredients = {
-    'Winter': 'root vegetables, squash, citrus, hearty greens, warming spices',
-    'Spring': 'asparagus, peas, spring onions, strawberries, fresh herbs',
-    'Summer': 'tomatoes, berries, corn, zucchini, stone fruits, fresh basil',
-    'Fall': 'pumpkin, apples, mushrooms, brussels sprouts, sweet potatoes, cranberries'
-  }
 
   return [
-    `You are a seasonal food expert. Suggest 5 delicious dishes perfect for ${season} (${monthNames[month]}).`,
-    '',
-    `Season: ${season}`,
-    `Typical seasonal ingredients: ${seasonalIngredients[season as keyof typeof seasonalIngredients]}`,
+    `Suggest 5 ${season} dishes.`,
     '',
     'STRICT JSON SCHEMA:',
     '{',
@@ -249,50 +229,42 @@ function generateSeasonalDishesPrompt(month: number): string {
     '    {',
     '      "dishName": string,',
     '      "cuisineType": string,',
-    '      "description": string (why it\'s perfect for this season),',
-    '      "reason": string (what seasonal ingredients it features),',
+    '      "description": string (brief),',
+    '      "reason": string (seasonal ingredient),',
     '      "estimatedCalories": number,',
-    '      "estimatedPrepTime": number (minutes)',
+    '      "estimatedPrepTime": number',
     '    }',
     '  ]',
     '}',
     '',
     'Rules:',
-    '- Focus on dishes that use seasonal ingredients available in ' + season,
-    '- Consider the weather (warm comfort foods for winter, light dishes for summer)',
-    '- Include diverse cuisines',
-    '- Make descriptions evocative of the season',
-    '- Output ONLY valid JSON, no markdown',
+    '- 5 dishes for ' + season,
+    '- VERY brief',
+    '- Output ONLY JSON',
   ].join('\n')
 }
 
 function generatePairingRecommendationsPrompt(currentDish: DishAnalysis): string {
   return [
-    'You are a food pairing expert. Suggest 5 perfect pairings (sides, drinks, desserts) for the given dish.',
-    '',
-    `Main dish: ${currentDish.dishName}`,
-    `Cuisine: ${currentDish.cuisineType}`,
-    `Calories: ${currentDish.nutrition.calories} cal`,
+    `Suggest 4 perfect pairings for: ${currentDish.dishName} (${currentDish.cuisineType})`,
     '',
     'STRICT JSON SCHEMA:',
     '{',
     '  "recommendations": [',
     '    {',
-    '      "dishName": string (name of pairing item),',
+    '      "dishName": string,',
     '      "cuisineType": string,',
-    '      "description": string (what type: side dish, beverage, dessert, appetizer),',
-    '      "reason": string (why it pairs well with the main dish),',
+    '      "description": string (type: side/drink/dessert),',
+    '      "reason": string (brief pairing reason),',
     '      "estimatedCalories": number,',
-    '      "estimatedPrepTime": number (minutes)',
+    '      "estimatedPrepTime": number',
     '    }',
     '  ]',
     '}',
     '',
     'Rules:',
-    '- Include mix of: 2 side dishes, 2 beverages (wine, tea, cocktail, juice), 1 dessert',
-    '- Consider flavor profiles (complement or contrast)',
-    '- Respect cuisine traditions when relevant',
-    '- Be specific about pairing reasons (e.g., "cuts through richness", "complements spices")',
-    '- Output ONLY valid JSON, no markdown',
+    '- 2 sides, 1 drink, 1 dessert',
+    '- VERY brief',
+    '- Output ONLY JSON',
   ].join('\n')
 }

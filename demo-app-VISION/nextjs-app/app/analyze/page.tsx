@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
-import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, ArrowLeft, Star } from 'lucide-react'
+import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, ArrowLeft, Star, Database } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
@@ -10,6 +10,8 @@ import AnimatedList from '@/components/AnimatedList'
 import AIRecommendations from '@/components/AIRecommendations'
 import LoadingWithFacts from '@/components/LoadingWithFacts'
 import { ResultsSkeleton } from '@/components/SkeletonCard'
+import { ImageCacheManager, generateBlurhash, calculateImageHash } from '@/lib/imageCache'
+import { compressImage, shouldCompress } from '@/lib/imageCompression'
 
 
 type Nutrition = {
@@ -53,6 +55,7 @@ export default function AnalyzePage() {
     const [result, setResult] = useState<AnalysisResult | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
     const [offline, setOffline] = useState(true)
     const [darkMode, setDarkMode] = useState(true)
     const [progress, setProgress] = useState(0)
@@ -114,6 +117,9 @@ export default function AnalyzePage() {
 
     // Load data from localStorage
     useEffect(() => {
+        // Run automatic cache cleanup on mount
+        ImageCacheManager.autoCleanup()
+
         const savedTheme = localStorage.getItem('theme')
         if (savedTheme) {
             setDarkMode(savedTheme === 'dark')
@@ -141,27 +147,61 @@ export default function AnalyzePage() {
         localStorage.setItem('theme', newTheme ? 'dark' : 'light')
     }
 
-    const onFilesSelected = useCallback((file: File | undefined) => {
+    const handleClearCache = () => {
+        const stats = ImageCacheManager.getCacheStats()
+        const cacheSize = (stats.cacheSize / 1024).toFixed(2)
+        
+        if (stats.totalEntries === 0) {
+            alert('Cache is already empty!')
+            return
+        }
+
+        if (confirm(
+            `Clear image cache?\n\n` +
+            `• Entries: ${stats.totalEntries}\n` +
+            `• Size: ${cacheSize} KB\n\n` +
+            `This will remove all cached analysis results.\nYou can still view recent and saved analyses.`
+        )) {
+            const cleared = ImageCacheManager.clearCache()
+            alert(`✓ Successfully cleared ${cleared} cache entries!\n\nFreed up ${cacheSize} KB of storage.`)
+        }
+    }
+
+    const onFilesSelected = useCallback(async (file: File | undefined) => {
         if (!file) return
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg']
         if (!validTypes.includes(file.type)) {
             setError('Unsupported file type. Please upload PNG or JPG/JPEG.')
             return
         }
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            setSelectedImage(e.target?.result as string)
-            setResult(null)
-            setError(null)
-            setFileObj(file)
-            // Auto-trigger analysis immediately after upload
-            setTimeout(() => {
-                if (file) {
-                    analyzeImageWithFile(file, e.target?.result as string)
-                }
-            }, 100)
+
+        try {
+            // Compress image if needed
+            let processedFile = file
+            if (shouldCompress(file)) {
+                console.log('🔄 Compressing image...')
+                processedFile = await compressImage(file)
+                console.log('✓ Image compression complete')
+            }
+
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                setSelectedImage(e.target?.result as string)
+                setResult(null)
+                setError(null)
+                setFileObj(processedFile)
+                // Auto-trigger analysis immediately after upload
+                setTimeout(() => {
+                    if (processedFile) {
+                        analyzeImageWithFile(processedFile, e.target?.result as string)
+                    }
+                }, 100)
+            }
+            reader.readAsDataURL(processedFile)
+        } catch (err) {
+            console.error('Image processing error:', err)
+            setError('Failed to process image. Please try again.')
         }
-        reader.readAsDataURL(file)
     }, [])
 
     const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,8 +254,46 @@ export default function AnalyzePage() {
         }
     }, [isAnalyzing])
 
-    const checkCache = async (file: File): Promise<{ cached: boolean; analysis?: any; imageHash?: string }> => {
+    const checkCache = async (file: File): Promise<{ cached: boolean; analysis?: any; imageHash?: string; blurhash?: string; similarMatch?: boolean }> => {
         try {
+            // Step 1: Generate blurhash for fast similarity check (client-side)
+            console.log('Generating blurhash for cache lookup...')
+            const blurhash = await generateBlurhash(file)
+            console.log('Blurhash generated:', blurhash)
+
+            // Step 2: Check client-side cache first (fastest)
+            // Level 1: Try exact match by calculating SHA-256 hash
+            const imageHash = await calculateImageHash(file)
+            const exactMatch = ImageCacheManager.findExactMatch(imageHash)
+            
+            if (exactMatch) {
+                console.log('✓ Exact match found in client cache!')
+                return {
+                    cached: true,
+                    analysis: exactMatch.analysis,
+                    imageHash,
+                    blurhash
+                }
+            }
+
+            // Level 2: Try similar match by blurhash (allows for slight variations)
+            console.log('Checking for similar images...')
+            const similarMatches = ImageCacheManager.findSimilarMatches(blurhash, 5)
+            
+            if (similarMatches.length > 0) {
+                console.log(`✓ Found ${similarMatches.length} similar image(s) in client cache!`)
+                const bestMatch = similarMatches[0]
+                return {
+                    cached: true,
+                    analysis: bestMatch.analysis,
+                    imageHash,
+                    blurhash,
+                    similarMatch: true
+                }
+            }
+
+            // Step 3: Check server-side database cache
+            console.log('Checking server-side database cache...')
             const form = new FormData()
             form.append('image', file)
 
@@ -225,9 +303,27 @@ export default function AnalyzePage() {
             })
 
             const data = await response.json()
-            if (!response.ok) throw new Error(data?.error || 'Failed to check cache')
+            
+            if (!response.ok) {
+                console.warn('Server cache check failed:', data?.error)
+                return { cached: false, imageHash, blurhash }
+            }
 
-            return data
+            if (data.cached && data.analysis) {
+                console.log('✓ Found in server cache, saving to client cache...')
+                // Save to client cache for faster future lookups
+                ImageCacheManager.saveToCache({
+                    imageHash,
+                    blurhash,
+                    analysis: data.analysis,
+                    timestamp: Date.now(),
+                    dishName: data.analysis.dishName,
+                    cuisineType: data.analysis.cuisineType,
+                    calories: data.analysis.nutrition?.calories || 0
+                })
+            }
+
+            return { ...data, imageHash, blurhash }
         } catch (err) {
             console.error('Cache check failed:', err)
             return { cached: false }
@@ -244,13 +340,16 @@ export default function AnalyzePage() {
 
             if (cacheResult.cached && cacheResult.analysis) {
                 setProgress(100)
-                setAnalysisStage('Loaded from cache!')
+                const cacheType = cacheResult.similarMatch ? 'similar image' : 'exact match'
+                setAnalysisStage(`Loaded from cache (${cacheType})!`)
 
                 setTimeout(() => {
                     const analysisData = cacheResult.analysis
                     setResult(analysisData)
                     addToRecentAnalyses(analysisData, imageUrl)
                     setIsAnalyzing(false)
+                    // Trigger recommendations even for cached results
+                    loadRecommendationsAsync(analysisData)
                 }, 100)
                 return
             }
@@ -281,7 +380,26 @@ export default function AnalyzePage() {
                 const analysisData = data
                 setResult(analysisData)
                 addToRecentAnalyses(analysisData, imageUrl)
+                
+                // Save to client-side cache with blurhash
+                if (cacheResult.imageHash && cacheResult.blurhash) {
+                    console.log('Saving new analysis to client cache...')
+                    ImageCacheManager.saveToCache({
+                        imageHash: cacheResult.imageHash,
+                        blurhash: cacheResult.blurhash,
+                        analysis: analysisData,
+                        timestamp: Date.now(),
+                        dishName: analysisData.dishName,
+                        cuisineType: analysisData.cuisineType,
+                        calories: analysisData.nutrition?.calories || 0
+                    })
+                    console.log('✓ Saved to client cache')
+                }
+                
                 setIsAnalyzing(false)
+                
+                // Trigger recommendations loading asynchronously (non-blocking)
+                loadRecommendationsAsync(analysisData)
             }, 100)
 
         } catch (err: any) {
@@ -289,6 +407,35 @@ export default function AnalyzePage() {
             setIsAnalyzing(false)
             setProgress(0)
             setAnalysisStage('')
+        }
+    }
+
+    // Asynchronous recommendations loading (non-blocking)
+    const loadRecommendationsAsync = async (analysisData: AnalysisResult) => {
+        console.log('🎯 Loading AI recommendations in background...')
+        setIsLoadingRecommendations(true)
+        
+        try {
+            // Preload healthier alternatives first (most commonly viewed)
+            const healthierResponse = await fetch('/api/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'healthier',
+                    currentDish: analysisData,
+                    offline
+                })
+            })
+            
+            if (healthierResponse.ok) {
+                console.log('✓ Healthier alternatives preloaded')
+            }
+            
+            setIsLoadingRecommendations(false)
+        } catch (err) {
+            console.error('Background recommendations loading failed:', err)
+            setIsLoadingRecommendations(false)
+            // Don't show error to user - recommendations will load on-demand
         }
     }
 
@@ -490,6 +637,18 @@ export default function AnalyzePage() {
                             </button>
 
                             <button
+                                onClick={handleClearCache}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${darkMode
+                                        ? 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30'
+                                        : 'bg-purple-100 hover:bg-purple-200 text-purple-600 border border-purple-200'
+                                    }`}
+                                title="Clear image cache to free up storage"
+                            >
+                                <Database size={18} />
+                                <span className="text-sm font-medium hidden lg:inline">Cache</span>
+                            </button>
+
+                            <button
                                 onClick={() => setOffline(!offline)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${offline
                                         ? darkMode
@@ -504,6 +663,16 @@ export default function AnalyzePage() {
                                 <span className="text-sm font-medium hidden sm:inline">
                                     {offline ? 'Offline' : 'Online'}
                                 </span>
+                            </button>
+
+                            <button
+                                onClick={toggleTheme}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${darkMode
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700'
+                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
+                                    }`}
+                            >
+                                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                             </button>
                         </div>
                     </div>

@@ -40,6 +40,9 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
   // Cache recipes in memory
   const cacheKey = `${dishName}-${cuisineType}`
   
+  // Track ongoing generation request (persists across modal open/close)
+  const generationPromiseRef = useState<{ current: Promise<void> | null }>(() => ({ current: null }))[0]
+  
   useEffect(() => {
     if (isOpen && !recipe) {
       // Check if recipe exists in localStorage cache
@@ -54,40 +57,71 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
           generateRecipe()
         }
       } else {
-        generateRecipe()
+        // Check if generation is already in progress
+        if (generationPromiseRef.current) {
+          console.log('🔄 Recipe generation already in progress...')
+          setIsLoading(true)
+        } else {
+          generateRecipe()
+        }
       }
     }
   }, [isOpen, cacheKey])
 
   const generateRecipe = async () => {
+    // Prevent duplicate requests
+    if (generationPromiseRef.current) {
+      console.log('⚠️ Recipe generation already in progress, skipping duplicate request')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
-    try {
-      const response = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dishName, cuisineType })
-      })
+    // Create the generation promise that continues in background
+    const generationPromise = (async () => {
+      try {
+        console.log('🍳 Starting recipe generation in background...')
+        const response = await fetch('/api/generate-recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dishName, cuisineType })
+        })
 
-      if (!response.ok) {
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Failed to generate recipe')
+        }
+
         const data = await response.json()
-        throw new Error(data.error || 'Failed to generate recipe')
+        console.log('✅ Recipe generation complete!')
+        
+        // Update state (only if component is still mounted)
+        setRecipe(data.recipe)
+        setActiveTab('recipe')
+        setIsLoading(false)
+        
+        // Cache the recipe in localStorage (persists even if modal closed)
+        localStorage.setItem(`recipe-${cacheKey}`, JSON.stringify(data.recipe))
+        console.log('💾 Recipe cached for future use')
+        
+        // Show notification if modal is closed
+        if (!isOpen) {
+          console.log('📬 Recipe ready! Open modal again to view.')
+        }
+      } catch (err: any) {
+        console.error('❌ Recipe generation error:', err)
+        setError(err.message || 'Unable to generate recipe. Please try external links.')
+        setActiveTab('links')
+        setIsLoading(false)
+      } finally {
+        generationPromiseRef.current = null // Clear the reference when done
+        console.log('🏁 Recipe generation process finished')
       }
+    })()
 
-      const data = await response.json()
-      setRecipe(data.recipe)
-      setActiveTab('recipe')
-      
-      // Cache the recipe in localStorage
-      localStorage.setItem(`recipe-${cacheKey}`, JSON.stringify(data.recipe))
-    } catch (err: any) {
-      console.error('Recipe generation error:', err)
-      setError(err.message || 'Unable to generate recipe. Please try external links.')
-      setActiveTab('links')
-    } finally {
-      setIsLoading(false)
-    }
+    // Store the promise so we can track ongoing generation
+    generationPromiseRef.current = generationPromise
   }
 
   const handleExternalSearch = (type: 'google' | 'youtube' | 'allrecipes') => {
@@ -101,8 +135,13 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
   }
 
   const handleClose = () => {
+    if (isLoading && generationPromiseRef.current) {
+      console.log('🔄 Modal closed - Recipe generation continues in background')
+      console.log('💡 Recipe will be cached when complete and available on next open')
+    }
     onClose()
-    // Don't clear recipe - keep it cached for fast re-opening
+    // Don't clear recipe or abort generation - keep it running in background
+    // The generation will complete and cache the result for next time
   }
 
   if (!isOpen) return null
