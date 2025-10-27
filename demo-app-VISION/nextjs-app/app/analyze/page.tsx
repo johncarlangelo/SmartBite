@@ -8,6 +8,7 @@ import Link from 'next/link'
 import RecommendedDishes from '@/components/RecommendedDishes'
 import AnimatedList from '@/components/AnimatedList'
 import AIRecommendations from '@/components/AIRecommendations'
+import HistoryModal from '@/components/HistoryModal'
 import LoadingWithFacts from '@/components/LoadingWithFacts'
 import { ResultsSkeleton } from '@/components/SkeletonCard'
 import { ImageCacheManager, generateBlurhash, calculateImageHash } from '@/lib/imageCache'
@@ -32,6 +33,9 @@ type AnalysisResult = {
         cookMinutes: number
         steps: string[]
     }
+    isHalal: boolean
+    halalNotes?: string
+    allergens: string[]
 }
 
 type RecentAnalysis = AnalysisResult & {
@@ -63,9 +67,6 @@ export default function AnalyzePage() {
     const [savedSuccess, setSavedSuccess] = useState(false)
     const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
     const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
-    const [showHistory, setShowHistory] = useState(false)
-    const [historyView, setHistoryView] = useState<'recent' | 'saved'>('recent')
-    const [unreadCount, setUnreadCount] = useState(0)
     
     // Centralized recommendations data to prevent duplicate API calls
     const [recommendationsData, setRecommendationsData] = useState<{
@@ -128,23 +129,15 @@ export default function AnalyzePage() {
 
     // Load data from localStorage
     useEffect(() => {
-        // Run automatic cache cleanup on mount
-        ImageCacheManager.autoCleanup()
-
         const savedTheme = localStorage.getItem('theme')
         if (savedTheme) {
             setDarkMode(savedTheme === 'dark')
         }
 
-        // Load online status from localStorage
+        // Load online status
         const savedOnlineStatus = localStorage.getItem('onlineStatus')
         if (savedOnlineStatus !== null) {
-            setOffline(savedOnlineStatus === 'false') // Note: offline is inverse of online
-        }
-
-        const recent = localStorage.getItem('recentAnalyses')
-        if (recent) {
-            setRecentAnalyses(JSON.parse(recent))
+            setOffline(savedOnlineStatus === 'false')
         }
 
         const saved = localStorage.getItem('savedAnalyses')
@@ -152,21 +145,23 @@ export default function AnalyzePage() {
             setSavedAnalyses(JSON.parse(saved))
         }
 
-        const unread = localStorage.getItem('unreadCount')
-        if (unread) {
-            setUnreadCount(parseInt(unread))
+        const recent = localStorage.getItem('recentAnalyses')
+        if (recent) {
+            setRecentAnalyses(JSON.parse(recent))
         }
 
-        // Listen for online status changes from navbar
-        const handleOnlineStatusChange = (event: Event) => {
-            const customEvent = event as CustomEvent<boolean>
-            setOffline(!customEvent.detail) // offline is inverse of online
+        // Auto-cleanup old cache entries (KEEP THIS!)
+        ImageCacheManager.autoCleanup()
+
+        // Listen for online status changes from Navbar
+        const handleOnlineStatusChange = (e: CustomEvent) => {
+            setOffline(!e.detail)
         }
 
-        window.addEventListener('onlineStatusChanged', handleOnlineStatusChange)
-        
+        window.addEventListener('onlineStatusChanged', handleOnlineStatusChange as EventListener)
+
         return () => {
-            window.removeEventListener('onlineStatusChanged', handleOnlineStatusChange)
+            window.removeEventListener('onlineStatusChanged', handleOnlineStatusChange as EventListener)
         }
     }, [])
 
@@ -549,13 +544,6 @@ export default function AnalyzePage() {
         
         setRecentAnalyses(updated)
         localStorage.setItem('recentAnalyses', JSON.stringify(updated))
-
-        // Increment unread count only if history modal is closed
-        if (!showHistory) {
-            const newCount = unreadCount + 1
-            setUnreadCount(newCount)
-            localStorage.setItem('unreadCount', String(newCount))
-        }
     }
 
     const saveAnalysis = () => {
@@ -584,25 +572,29 @@ export default function AnalyzePage() {
         setTimeout(() => setSavedSuccess(false), 3000)
     }
 
-    const toggleHistory = () => {
-        setShowHistory(!showHistory)
-        if (!showHistory) {
-            // Clear unread count when opening history
-            setUnreadCount(0)
-            localStorage.setItem('unreadCount', '0')
-        }
-    }
-
     const loadHistoryItem = (item: RecentAnalysis | SavedAnalysis) => {
+        // Reset recommendations when loading a different dish from history
+        setRecommendationsData(null)
+        recommendationsLoadingRef.current = false
+        lastAnalyzedDishRef.current = ''
+        
         setSelectedImage(item.imageUrl)
-        setResult({
+        const analysisData = {
             dishName: item.dishName,
             cuisineType: item.cuisineType,
             ingredients: item.ingredients,
             nutrition: item.nutrition,
-            recipe: item.recipe
-        })
-        setShowHistory(false)
+            recipe: item.recipe,
+            isHalal: item.isHalal,
+            halalNotes: item.halalNotes,
+            allergens: item.allergens
+        }
+        setResult(analysisData)
+        
+        // Load fresh recommendations for this dish
+        setTimeout(() => {
+            loadRecommendationsAsync(analysisData)
+        }, 100)
     }
 
     const deleteRecentItem = (id: string) => {
@@ -638,44 +630,6 @@ export default function AnalyzePage() {
         (saved) => saved.dishName === result.dishName && saved.imageUrl === selectedImage
     ))
 
-    // Close history handler
-    const handleCloseHistory = () => {
-        setShowHistory(false)
-    }
-
-    // Load recent analysis
-    const loadRecentAnalysis = (item: RecentAnalysis) => {
-        loadHistoryItem(item)
-    }
-
-    // Load saved analysis
-    const loadSavedAnalysis = (item: SavedAnalysis) => {
-        loadHistoryItem(item)
-    }
-
-    // Delete recent analysis
-    const deleteRecentAnalysis = (id: string) => {
-        deleteRecentItem(id)
-    }
-
-    // Delete saved analysis  
-    const deleteSavedAnalysis = (id: string) => {
-        deleteSavedItem(id)
-    }
-
-    // AnimatedHistoryItem component
-    const AnimatedHistoryItem = ({ children, index, delay }: { children: React.ReactNode; index: number; delay: number }) => {
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * delay, duration: 0.3 }}
-            >
-                {children}
-            </motion.div>
-        )
-    }
-
     return (
         <div className={`min-h-screen relative transition-colors duration-300 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
             {/* Grid Motion Background */}
@@ -706,21 +660,17 @@ export default function AnalyzePage() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={toggleHistory}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${darkMode
-                                        ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
-                                    }`}
-                            >
-                                <History size={18} />
-                                <span className="text-sm font-medium hidden sm:inline">History</span>
-                                {unreadCount > 0 && (
-                                    <span className="ml-1 px-2 py-0.5 text-xs font-bold rounded-full bg-blue-500 text-white animate-pulse">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
+                            <HistoryModal
+                                darkMode={darkMode}
+                                recentAnalyses={recentAnalyses as any}
+                                savedAnalyses={savedAnalyses as any}
+                                onLoadRecent={loadHistoryItem as any}
+                                onLoadSaved={loadHistoryItem as any}
+                                onDeleteRecent={deleteRecentItem}
+                                onDeleteSaved={deleteSavedItem}
+                                onClearAllRecent={clearAllRecent}
+                                onClearAllSaved={clearAllSaved}
+                            />
 
                             <button
                                 onClick={handleClearCache}
@@ -918,6 +868,59 @@ export default function AnalyzePage() {
                                     </motion.div>
                                 )}
 
+                                {/* Halal Status & Allergens */}
+                                <AnimatedSection delay={0.05}>
+                                    <div className="flex flex-wrap gap-4">
+                                        {/* Halal Status Badge */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.1, duration: 0.3 }}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
+                                                result.isHalal
+                                                    ? darkMode
+                                                        ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                                                        : 'bg-green-50 border-green-300 text-green-700'
+                                                    : darkMode
+                                                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                                                        : 'bg-orange-50 border-orange-300 text-orange-700'
+                                            }`}
+                                        >
+                                            <span className="text-xl">{result.isHalal ? '✓' : 'ⓘ'}</span>
+                                            <div>
+                                                <p className="font-bold text-sm">
+                                                    {result.isHalal ? 'Halal Certified' : 'Check Ingredients'}
+                                                </p>
+                                                {result.halalNotes && (
+                                                    <p className="text-xs opacity-80">{result.halalNotes}</p>
+                                                )}
+                                            </div>
+                                        </motion.div>
+
+                                        {/* Allergen Alerts */}
+                                        {result.allergens && result.allergens.length > 0 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: 0.15, duration: 0.3 }}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
+                                                    darkMode
+                                                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                                                        : 'bg-red-50 border-red-300 text-red-700'
+                                                }`}
+                                            >
+                                                <span className="text-xl">⚠️</span>
+                                                <div>
+                                                    <p className="font-bold text-sm">Allergen Alert</p>
+                                                    <p className="text-xs opacity-80">
+                                                        Contains: {result.allergens.join(', ')}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                </AnimatedSection>
+
                                 {/* Nutrition Facts */}
                                 <AnimatedSection delay={0.1}>
                                     <div>
@@ -960,14 +963,18 @@ export default function AnalyzePage() {
                                                 className="flex flex-col items-center justify-center"
                                             >
                                                 {/* Pie Chart with Labels */}
-                                                <div className="relative w-80 h-80">
-                                                    <svg viewBox="0 0 300 300" className="transform -rotate-90">
+                                                <div className="relative w-96 h-96">
+                                                    <svg viewBox="0 0 400 400" className="transform -rotate-90">
                                                         {(() => {
                                                             const total = result.nutrition.protein_g + result.nutrition.carbs_g + result.nutrition.fat_g;
                                                             let currentAngle = 0;
                                                             const colors = ['#60a5fa', '#c084fc', '#fbbf24']; // blue, purple, yellow
                                                             const values = [result.nutrition.protein_g, result.nutrition.carbs_g, result.nutrition.fat_g];
                                                             const labels = ['Protein', 'Carbs', 'Fat'];
+                                                            const centerX = 200;
+                                                            const centerY = 200;
+                                                            const radius = 110; // Pie chart radius
+                                                            const labelRadius = 160; // Label position (further out)
                                                             
                                                             return values.map((value, index) => {
                                                                 const percentage = (value / total) * 100;
@@ -978,21 +985,20 @@ export default function AnalyzePage() {
                                                                 
                                                                 currentAngle = endAngle;
                                                                 
-                                                                const startX = 150 + 100 * Math.cos((startAngle * Math.PI) / 180);
-                                                                const startY = 150 + 100 * Math.sin((startAngle * Math.PI) / 180);
-                                                                const endX = 150 + 100 * Math.cos((endAngle * Math.PI) / 180);
-                                                                const endY = 150 + 100 * Math.sin((endAngle * Math.PI) / 180);
+                                                                const startX = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+                                                                const startY = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+                                                                const endX = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+                                                                const endY = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
                                                                 const largeArc = angle > 180 ? 1 : 0;
                                                                 
                                                                 // Calculate label position (outside the pie)
-                                                                const labelRadius = 130;
-                                                                const labelX = 150 + labelRadius * Math.cos((midAngle * Math.PI) / 180);
-                                                                const labelY = 150 + labelRadius * Math.sin((midAngle * Math.PI) / 180);
+                                                                const labelX = centerX + labelRadius * Math.cos((midAngle * Math.PI) / 180);
+                                                                const labelY = centerY + labelRadius * Math.sin((midAngle * Math.PI) / 180);
                                                                 
                                                                 const pathData = [
-                                                                    `M 150 150`,
+                                                                    `M ${centerX} ${centerY}`,
                                                                     `L ${startX} ${startY}`,
-                                                                    `A 100 100 0 ${largeArc} 1 ${endX} ${endY}`,
+                                                                    `A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}`,
                                                                     'Z'
                                                                 ].join(' ');
                                                                 
@@ -1010,7 +1016,7 @@ export default function AnalyzePage() {
                                                                         <g transform={`rotate(90 ${labelX} ${labelY})`}>
                                                                             <motion.text
                                                                                 x={labelX}
-                                                                                y={labelY}
+                                                                                y={labelY - 2}
                                                                                 textAnchor="middle"
                                                                                 className={`text-sm font-bold ${darkMode ? 'fill-white' : 'fill-gray-900'}`}
                                                                                 initial={{ opacity: 0 }}
@@ -1021,7 +1027,7 @@ export default function AnalyzePage() {
                                                                             </motion.text>
                                                                             <motion.text
                                                                                 x={labelX}
-                                                                                y={labelY + 16}
+                                                                                y={labelY + 14}
                                                                                 textAnchor="middle"
                                                                                 className={`text-xs font-semibold`}
                                                                                 fill={colors[index]}
@@ -1038,7 +1044,7 @@ export default function AnalyzePage() {
                                                         })()}
                                                     </svg>
                                                     {/* Center circle for donut effect with Calories */}
-                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
+                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
                                                         <div className="text-center">
                                                             <p className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                                                                 {result.nutrition.calories}
@@ -1175,202 +1181,6 @@ export default function AnalyzePage() {
                     )}
                 </div>
             </main>
-
-            {/* History Modal */}
-            {showHistory && (
-                <div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                    onClick={handleCloseHistory}
-                >
-                    <div
-                        className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto scrollbar-hide border shadow-2xl`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className={`text-2xl font-bold ${textClass} flex items-center gap-2`}>
-                                <History size={28} />
-                                Analysis History
-                            </h2>
-                            <button
-                                onClick={handleCloseHistory}
-                                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition-colors`}
-                            >
-                                <X size={24} className={textClass} />
-                            </button>
-                        </div>
-
-                        {/* Tab Buttons */}
-                        <div className="flex gap-3 mb-6">
-                            <button
-                                onClick={() => setHistoryView('recent')}
-                                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                                    historyView === 'recent'
-                                        ? darkMode
-                                            ? 'bg-purple-600 text-white shadow-lg'
-                                            : 'bg-purple-500 text-white shadow-lg'
-                                        : darkMode
-                                            ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                            >
-                                <Clock size={20} />
-                                Recent Analysis
-                            </button>
-                            <button
-                                onClick={() => setHistoryView('saved')}
-                                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                                    historyView === 'saved'
-                                        ? darkMode
-                                            ? 'bg-blue-600 text-white shadow-lg'
-                                            : 'bg-blue-500 text-white shadow-lg'
-                                        : darkMode
-                                            ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                            >
-                                <Save size={20} />
-                                Saved Analysis
-                            </button>
-                        </div>
-
-                        {historyView === 'recent' ? (
-                            /* Recently Analyzed View */
-                            <div className="space-y-4">
-                                {recentAnalyses.length === 0 ? (
-                                    <div className={`text-center ${textSecondaryClass} py-12`}>
-                                        <Clock size={48} className="mx-auto mb-4 opacity-50" />
-                                        <p>No recent analyses yet. Analyze a dish to see it here!</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className={`${textSecondaryClass} text-sm mb-4`}>
-                                            Showing your {Math.min(recentAnalyses.length, 3)} most recently analyzed {recentAnalyses.length === 1 ? 'dish' : 'dishes'}
-                                        </p>
-                                        <div className="space-y-4 max-h-[60vh] overflow-y-auto scrollbar-hide pr-2">
-                                            {recentAnalyses
-                                                .sort((a, b) => new Date(b.analyzedAt).getTime() - new Date(a.analyzedAt).getTime())
-                                                .slice(0, 3)
-                                                .map((recent, index) => (
-                                                    <AnimatedHistoryItem key={recent.id} index={index} delay={0.1}>
-                                                        <div
-                                                            className={`${darkMode ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 hover:from-purple-900/40 hover:to-blue-900/40 border-purple-500/40' : 'bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-300'} rounded-xl p-4 border-2 transition-all cursor-pointer group shadow-lg`}
-                                                        >
-                                                            <div className="flex gap-4">
-                                                                <div className="relative">
-                                                                    <img
-                                                                        src={recent.imageUrl}
-                                                                        alt={recent.dishName}
-                                                                        className="w-32 h-32 object-cover rounded-lg shadow-md"
-                                                                    />
-                                                                    {index === 0 && (
-                                                                        <div className={`absolute -top-2 -right-2 ${darkMode ? 'bg-yellow-500' : 'bg-yellow-400'} text-white text-xs font-bold px-2 py-1 rounded-full shadow-md`}>
-                                                                            LATEST
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <h3 className={`${textClass} font-bold mb-1 text-xl`}>{recent.dishName}</h3>
-                                                                    <p className={`${textSecondaryClass} text-sm mb-1`}>
-                                                                        <span className="font-semibold">Cuisine:</span> {recent.cuisineType}
-                                                                    </p>
-                                                                    <p className={`${textSecondaryClass} text-sm mb-2`}>
-                                                                        <span className="font-semibold">Analyzed:</span> {new Date(recent.analyzedAt).toLocaleDateString()} at {new Date(recent.analyzedAt).toLocaleTimeString()}
-                                                                    </p>
-                                                                    {recent.createdAt && (
-                                                                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${darkMode ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'} mb-2`}>
-                                                                            <Clock size={12} />
-                                                                            Cached result
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="flex gap-2 mt-3">
-                                                                        <button
-                                                                            onClick={() => loadRecentAnalysis(recent)}
-                                                                            className={`text-md px-4 py-2 rounded-lg ${buttonPrimaryClass} transition-all font-medium shadow-md hover:shadow-lg`}
-                                                                        >
-                                                                            View
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation()
-                                                                                deleteRecentAnalysis(recent.id)
-                                                                            }}
-                                                                            className={`text-md px-4 py-2 rounded-lg ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all font-medium flex items-center gap-1`}
-                                                                        >
-                                                                            <Trash2 size={14} />
-                                                                            Delete
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </AnimatedHistoryItem>
-                                                ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            /* Saved Analyses View */
-                            <div className="space-y-4">
-                                {savedAnalyses.length === 0 ? (
-                                    <div className={`text-center ${textSecondaryClass} py-12`}>
-                                        <Save size={48} className="mx-auto mb-4 opacity-50" />
-                                        <p>No saved analyses yet. Save your favorite dishes to see them here!</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto scrollbar-hide pr-2">
-                                        {savedAnalyses.map((saved, index) => (
-                                    <AnimatedHistoryItem key={saved.id} index={index} delay={0.1}>
-                                        <div
-                                            className={`${darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'} rounded-xl p-4 border ${darkMode ? 'border-slate-600' : 'border-gray-200'} transition-all cursor-pointer group`}
-                                        >
-                                            <div className="flex gap-4">
-                                                <img
-                                                    src={saved.imageUrl}
-                                                    alt={saved.dishName}
-                                                    className="w-32 h-32 object-cover rounded-lg shadow-md"
-                                                />
-                                                <div className="flex-1">
-                                                    <h3 className={`${textClass} font-bold mb-1 text-xl`}>{saved.dishName}</h3>
-                                                    <p className={`${textSecondaryClass} text-md mb-2`}>
-                                                        {new Date(saved.savedAt).toLocaleDateString()} at {new Date(saved.savedAt).toLocaleTimeString()}
-                                                    </p>
-                                                    {saved.createdAt && saved.createdAt !== saved.savedAt && (
-                                                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${darkMode ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'} mb-2`}>
-                                                            <Clock size={12} />
-                                                            Cached result
-                                                        </div>
-                                                    )}
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => loadSavedAnalysis(saved)}
-                                                            className={`text-md px-4 py-2 rounded-lg mt-2 ${buttonPrimaryClass} transition-all font-medium`}
-                                                        >
-                                                            View
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                deleteSavedAnalysis(saved.id)
-                                                            }}
-                                                            className={`text-md px-4 py-2 rounded-lg mt-2 ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-all font-medium flex items-center gap-1`}
-                                                        >
-                                                            <Trash2 size={14} />
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </AnimatedHistoryItem>
-                                ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
 
             {/* Dark Mode Toggle Button */}
             <button

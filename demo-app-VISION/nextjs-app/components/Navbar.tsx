@@ -5,7 +5,8 @@ import { Camera, Menu, X } from "lucide-react";
 import Link from "next/link";
 
 interface NavbarProps {
-    darkMode?: boolean;
+    darkMode?: boolean
+    isOnline?: boolean
 }
 
 const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {

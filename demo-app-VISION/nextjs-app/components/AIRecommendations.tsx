@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'motion/react'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { Sparkles, TrendingUp, Calendar, Wine, Loader2, ChevronRight, Star, Flame, Clock, Award } from 'lucide-react'
 import RecipeModal from './RecipeModal'
 import LoadingWithFacts from './LoadingWithFacts'
@@ -61,7 +61,7 @@ type CategoryRecommendations = {
   }
 }
 
-export default function AIRecommendations({ currentDish, darkMode, offline = false, preloadedData }: AIRecommendationsProps) {
+const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMode, offline = false, preloadedData }: AIRecommendationsProps) {
   const [activeCategory, setActiveCategory] = useState<string>('healthier')
   const [categoryData, setCategoryData] = useState<CategoryRecommendations>({
     healthier: { recommendations: [], isLoading: false, error: null, isLoaded: false },
@@ -407,4 +407,6 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
       )}
     </div>
   )
-}
+})
+
+export default AIRecommendations

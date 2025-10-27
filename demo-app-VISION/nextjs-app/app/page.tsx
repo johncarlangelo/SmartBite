@@ -66,24 +66,6 @@ export default function Home() {
       <HeroSection darkMode={darkMode} />
       <FoodCarousel darkMode={darkMode} isOnline={isOnline} />
       
-      {/* Online/Offline Toggle Button */}
-      <button
-        onClick={() => setIsOnline(!isOnline)}
-        className={`fixed bottom-8 left-8 px-4 py-3 rounded-full shadow-2xl transition-all hover:scale-110 z-50 flex items-center gap-2 font-semibold ${
-          isOnline
-            ? darkMode
-              ? 'bg-green-600 text-white hover:bg-green-700 border border-green-500'
-              : 'bg-green-500 text-white hover:bg-green-600 border border-green-400'
-            : darkMode
-              ? 'bg-orange-600 text-white hover:bg-orange-700 border border-orange-500'
-              : 'bg-orange-500 text-white hover:bg-orange-600 border border-orange-400'
-        }`}
-        aria-label="Toggle online/offline mode"
-      >
-        <span className="text-lg">{isOnline ? '🌐' : '📡'}</span>
-        <span className="text-sm">{isOnline ? 'Online' : 'Offline'}</span>
-      </button>
-
       {/* Dark Mode Toggle Button */}
       <button
         onClick={toggleDarkMode}

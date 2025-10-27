@@ -19,6 +19,9 @@ type AnalysisResult = {
     cookMinutes: number
     steps: string[]
   }
+  isHalal: boolean
+  halalNotes?: string
+  allergens: string[]
   isFood?: boolean
   confidenceFood?: number
 }
@@ -121,11 +124,13 @@ export async function POST(req: NextRequest) {
     // Output: Detailed nutrition facts, ingredients list, cooking recipe
     // ============================================
     const detailPrompt = [
-      `Generate detailed nutritional information, ingredients, and recipe for: "${dishName}" (${cuisineType} cuisine).`,
+      `Generate detailed nutritional information, ingredients, recipe, and dietary information for the STANDARD/BASIC version of: "${dishName}" (${cuisineType} cuisine).`,
+      '',
+      'IMPORTANT: Analyze the BASE dish without any added toppings or extras (like bacon bits, cheese, etc.) unless they are ESSENTIAL to the dish.',
       '',
       'Return ONLY this JSON format:',
       '{',
-      '  "ingredients": string[] (8-12 specific ingredients),',
+      '  "ingredients": string[] (list ONLY the core ingredients in the BASIC version of this dish),',
       '  "nutrition": {',
       '    "calories": number (per serving),',
       '    "protein_g": number,',
@@ -137,10 +142,26 @@ export async function POST(req: NextRequest) {
       '    "prepMinutes": number,',
       '    "cookMinutes": number,',
       '    "steps": string[] (8-12 detailed cooking steps)',
-      '  }',
+      '  },',
+      '  "isHalal": boolean (based ONLY on the ingredients list above - true if all listed ingredients are halal),',
+      '  "halalNotes": string (ONLY mention ingredients from the ingredients list above if not halal. Leave empty if halal.),',
+      '  "allergens": string[] (based ONLY on the ingredients list above: "Dairy", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat/Gluten", "Soy", etc.)',
       '}',
       '',
+      'CRITICAL RULES FOR CONSISTENCY:',
+      '1. The "ingredients" list is the source of truth',
+      '2. "isHalal" must be based ONLY on ingredients you listed (if no pork/alcohol/non-halal meat in ingredients list, then isHalal = true)',
+      '3. "halalNotes" can ONLY mention ingredients that appear in the "ingredients" list',
+      '4. "allergens" can ONLY mention allergens from ingredients in the "ingredients" list',
+      '5. Do NOT assume extra toppings or additions that are not essential to the basic dish',
+      '',
+      'Examples:',
+      '- Hash Browns: Just potatoes, oil, salt, pepper (no bacon unless specifically stated)',
+      '- Caesar Salad: Must include anchovies (essential), but not bacon (optional topping)',
+      '- Spaghetti Carbonara: Must include pork/bacon (essential to the dish)',
+      '',
       'Make the recipe steps very detailed and specific. Be accurate with nutrition based on typical serving sizes.',
+      '',
       'Output ONLY valid JSON, no markdown, no extra text.'
     ].join('\n')
 
@@ -174,6 +195,9 @@ export async function POST(req: NextRequest) {
       ingredients: detailResult.ingredients || [],
       nutrition: detailResult.nutrition || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
       recipe: detailResult.recipe || { servings: 1, prepMinutes: 0, cookMinutes: 0, steps: [] },
+      isHalal: detailResult.isHalal ?? true,
+      halalNotes: detailResult.halalNotes,
+      allergens: detailResult.allergens || [],
       isFood: true,
       confidenceFood: confidence
     }
