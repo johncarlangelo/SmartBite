@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'motion/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Sparkles, TrendingUp, Calendar, Wine, Loader2, ChevronRight, Star, Flame, Clock, Award } from 'lucide-react'
 import RecipeModal from './RecipeModal'
 import LoadingWithFacts from './LoadingWithFacts'
@@ -45,6 +45,11 @@ type AIRecommendationsProps = {
   currentDish?: DishAnalysis
   darkMode: boolean
   offline?: boolean
+  preloadedData?: {
+    healthier: any[]
+    seasonal: any[]
+    pairing: any[]
+  } | null
 }
 
 type CategoryRecommendations = {
@@ -56,7 +61,7 @@ type CategoryRecommendations = {
   }
 }
 
-export default function AIRecommendations({ currentDish, darkMode, offline = false }: AIRecommendationsProps) {
+export default function AIRecommendations({ currentDish, darkMode, offline = false, preloadedData }: AIRecommendationsProps) {
   const [activeCategory, setActiveCategory] = useState<string>('healthier')
   const [categoryData, setCategoryData] = useState<CategoryRecommendations>({
     healthier: { recommendations: [], isLoading: false, error: null, isLoaded: false },
@@ -65,6 +70,7 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
   })
   const [isVisible, setIsVisible] = useState(false)
   const [selectedDish, setSelectedDish] = useState<{ name: string; cuisine: string } | null>(null)
+  const hasLoadedRef = useRef(false) // Prevent multiple loads
 
   const categories: RecommendationCategory[] = [
     {
@@ -93,12 +99,48 @@ export default function AIRecommendations({ currentDish, darkMode, offline = fal
     },
   ]
 
-  // Load all recommendations on mount
+  // Use preloaded data if available, otherwise load on-demand
+  // Using useRef to prevent multiple executions on re-renders
   useEffect(() => {
-    // Show component immediately
     setIsVisible(true)
-    loadAllRecommendations()
-  }, [])
+    
+    // Prevent loading if already loaded (critical for preventing duplicate requests)
+    if (hasLoadedRef.current) {
+      console.log('✓ Recommendations already processed, skipping duplicate load')
+      return
+    }
+    
+    if (preloadedData && preloadedData.healthier && preloadedData.seasonal && preloadedData.pairing) {
+      // Use preloaded data from parent component
+      console.log('✓ Using preloaded recommendations data (no API calls needed)')
+      setCategoryData({
+        healthier: {
+          recommendations: preloadedData.healthier,
+          isLoading: false,
+          error: null,
+          isLoaded: true
+        },
+        seasonal: {
+          recommendations: preloadedData.seasonal,
+          isLoading: false,
+          error: null,
+          isLoaded: true
+        },
+        pairing: {
+          recommendations: preloadedData.pairing,
+          isLoading: false,
+          error: null,
+          isLoaded: true
+        }
+      })
+      hasLoadedRef.current = true
+    } else if (currentDish && !hasLoadedRef.current) {
+      // Fallback: Load on-demand if no preloaded data (shouldn't happen normally)
+      console.log('⚠️ No preloaded data available, loading recommendations on-demand...')
+      hasLoadedRef.current = true
+      loadAllRecommendations()
+    }
+  }, [preloadedData])
 
   const loadAllRecommendations = async () => {
     // Load all categories in parallel

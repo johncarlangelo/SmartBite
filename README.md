@@ -11,7 +11,7 @@ Project is based on the VISION-TRACK template located at `demo-app-VISION/nextjs
 - Ollama running locally (`ollama serve`)
 - Required AI models:
   - `ollama pull llava:7b` (4.7GB) - Vision model for image analysis
-  - `ollama pull llama3.2:1b` (1.3GB) - Fast text model for recommendations and recipes
+  - `ollama pull llama3.2:3b` (2.0GB) - Fast text model for recommendations and recipes
 - For Shadcn library (`npx shadcn@latest add https://reactbits.dev/r/AnimatedList-TS-TW`, `npx shadcn@latest add https://reactbits.dev/r/GridMotion-TS-TW`)
 - Just incase (`npm install -D tailwindcss postcss autoprefixer`, `npx tailwindcss init -p`)
 
@@ -32,7 +32,7 @@ Open `http://localhost:3000` and upload an image of a dish.
 
 ### Features
 - **AI-Powered Food Analysis**: Upload food images for instant identification and analysis
-- **Multi-Model AI**: Uses llava:7b (vision) + llama3.2:1b (text) for optimized performance
+- **Multi-Model AI**: Uses llava:7b (vision) + llama3.2:3b (text) for optimized performance
 - **AI Recommendations Engine**: Get healthier alternatives, seasonal picks, and perfect pairings
 - **Recipe Modal**: Detailed recipes with AI generation + external search links
 - **History Management**: Track and save your analyzed dishes

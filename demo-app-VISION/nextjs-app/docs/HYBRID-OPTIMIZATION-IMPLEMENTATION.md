@@ -56,7 +56,7 @@ Identify ONLY:
 }
 ```
 
-#### Stage 2: Text Model (llama3.2:1b)
+#### Stage 2: Text Model (llama3.2:3b)
 **Purpose**: Generate detailed information from identified dish
 
 **Prompt Focus**:
@@ -91,7 +91,7 @@ Generate detailed info for: "${dishName}" (${cuisineType} cuisine)
 **File**: `/app/api/recommendations/route.ts`
 
 **Optimizations**:
-- Uses fast text-only model: `llama3.2:1b` (3-5x faster than vision model)
+- Uses fast text-only model: `llama3.2:3b`
 - Reduced timeout: 60s (down from 120s)
 - Reduced tokens: 800 (down from 1000)
 - Separate endpoint for independent caching and retry logic
@@ -261,7 +261,7 @@ Total Time: 8.5-13.5 seconds
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_VISION_MODEL=llava:7b        # Stage 1
-OLLAMA_RECOMMENDATION_MODEL=llama3.2:1b  # Stage 2 + Recommendations
+OLLAMA_RECOMMENDATION_MODEL=llama3.2:3b  # Stage 2 + Recommendations
 ```
 
 ### Compression Settings

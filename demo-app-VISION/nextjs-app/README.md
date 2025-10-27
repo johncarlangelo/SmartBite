@@ -13,7 +13,7 @@ SmartBite is a Next.js application that uses AI to analyze food images and provi
 ### 🔍 Analysis Page
 - **Instant AI Analysis**: Upload food images for immediate AI-powered insights
 - **Fast Processing**: Optimized with 1.1s progress animation and auto-trigger on upload
-- **Multi-Model AI**: Uses llava:7b for image analysis and llama3.2:1b for fast text generation
+- **Multi-Model AI**: Uses llava:7b for image analysis and llama3.2:3b for fast text generation
 - **Comprehensive Results Display**:
   - Dish name and cuisine type identification
   - Complete ingredient list with visual tags
@@ -76,7 +76,7 @@ SmartBite is a Next.js application that uses AI to analyze food images and provi
 - **Database**: SQLite with better-sqlite3
 - **AI Processing**: Ollama with multi-model setup
   - **llava:7b** (4.7GB) - Vision model for image analysis
-  - **llama3.2:1b** (1.3GB) - Fast text generation for recommendations and recipes (3-5x faster)
+  - **llama3.2:3b** (2.0GB) - Fast text generation for recommendations and recipes
 - **State Management**: React useState + localStorage
 - **Deployment**: Docker-ready with PM2 process management support
 
@@ -170,8 +170,8 @@ cd SmartBite/demo-app-VISION/nextjs-app
 # Pull the LLaVA 7B vision model (required for image analysis)
 ollama pull llava:7b
 
-# Pull the Llama 3.2 1B model (required for recommendations and recipes)
-ollama pull llama3.2:1b
+# Pull the Llama 3.2 3B model (required for recommendations and recipes)
+ollama pull llama3.2:3b
 
 # Verify the models are installed
 ollama list
@@ -206,13 +206,13 @@ Create a `.env.local` file in the `nextjs-app` directory:
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_VISION_MODEL=llava:7b
-OLLAMA_RECOMMENDATION_MODEL=llama3.2:1b
+OLLAMA_RECOMMENDATION_MODEL=llama3.2:3b
 OLLAMA_ONLINE_MODEL=llava:7b
 ```
 
 **Model Configuration**:
 - `OLLAMA_VISION_MODEL`: Used for analyzing food images (llava:7b)
-- `OLLAMA_RECOMMENDATION_MODEL`: Used for generating recommendations and recipes (llama3.2:1b - 3-5x faster)
+- `OLLAMA_RECOMMENDATION_MODEL`: Used for generating recommendations and recipes (llama3.2:3b)
 - `OLLAMA_ONLINE_MODEL`: Fallback model for online mode
 
 ### 5. Run the Development Server
@@ -311,7 +311,7 @@ Detailed documentation is available in the [docs](docs/) folder:
 
 ### 🤖 AI Recommendations Engine (NEW!)
 - ✅ Implemented **AI-powered recommendations** with 3 categories
-- ✅ **Multi-model optimization**: llava:7b for images, llama3.2:1b for recommendations (3-5x faster)
+- ✅ **Multi-model optimization**: llava:7b for images, llama3.2:3b for recommendations
 - ✅ **Pre-loading all categories** for instant switching (no reload on tab change)
 - ✅ **Recipe Modal** with on-demand generation and caching
 - ✅ **Hybrid approach**: AI-generated recipes + external search links
@@ -447,10 +447,10 @@ ollama list
 
 # Pull models if missing
 ollama pull llava:7b
-ollama pull llama3.2:1b
+ollama pull llama3.2:3b
 
 # Test model response
-ollama run llama3.2:1b "Hello"
+ollama run llama3.2:3b "Hello"
 ```
 
 ### Build Errors
@@ -501,7 +501,7 @@ git clone https://github.com/johncarlangelo/SmartBite.git
 cd SmartBite/demo-app-VISION/nextjs-app
 npm install
 ollama pull llava:7b
-ollama pull llama3.2:1b
+ollama pull llama3.2:3b
 npm run dev
 
 # Daily development
@@ -559,9 +559,9 @@ npm run start
 
 ### AI Models Configuration
 - **llava:7b** (4.7GB): Vision model for analyzing food images
-- **llama3.2:1b** (1.3GB): Fast text model for recommendations and recipes
+- **llama3.2:3b** (2.0GB): Text model for recommendations and recipes
 - Both models run locally via Ollama (no internet required)
-- Multi-model setup reduces recommendation generation time by 3-5x
+- Multi-model setup optimizes performance for different tasks
 
 ### API Configuration
 - The analyze-image API endpoint may need configuration for production deployment

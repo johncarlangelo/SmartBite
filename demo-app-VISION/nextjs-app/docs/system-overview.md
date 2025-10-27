@@ -16,7 +16,7 @@ SmartBite is an AI-powered food analysis application that uses a sophisticated 3
 
 **Why llava:7b?** Optimized for visual understanding, fast at identifying food items.
 
-### Stage 2: Detailed Content Generation (llama3.2:1b)
+### Stage 2: Detailed Content Generation (llama3.2:3b)
 **Purpose:** Generate ALL detailed text content  
 **Input:** Dish name + cuisine type from Stage 1  
 **Output:**
@@ -26,7 +26,7 @@ SmartBite is an AI-powered food analysis application that uses a sophisticated 3
 
 **Why llama3.2?** Optimized for text generation, produces detailed accurate content.
 
-### Stage 3: Recommendations (llama3.2:1b)
+### Stage 3: Recommendations (llama3.2:3b)
 **Purpose:** Intelligent food suggestions  
 **Input:** Analysis results + user history  
 **Output:** 4-6 recommendations (similar dishes, healthier alternatives, seasonal suggestions, pairings)
@@ -42,8 +42,8 @@ SmartBite is an AI-powered food analysis application that uses a sophisticated 3
 
 2. **AI Image Analysis**
    - **Stage 1 (Vision):** llava:7b identifies dish name & cuisine type
-   - **Stage 2 (Text):** llama3.2:1b generates nutrition, ingredients, recipe
-   - **Stage 3 (Recommendations):** llama3.2:1b creates personalized suggestions
+   - **Stage 2 (Text):** llama3.2:3b generates nutrition, ingredients, recipe
+   - **Stage 3 (Recommendations):** llama3.2:3b creates personalized suggestions
    - Structured JSON output with validation
 
 3. **Duplicate Detection and Caching**

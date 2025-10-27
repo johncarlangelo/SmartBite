@@ -22,7 +22,7 @@ The Recipe Modal provides detailed recipe information when users click "Learn Mo
 - **Method**: POST
 - **Input**: `{ dishName: string, cuisineType: string }`
 - **Output**: Detailed recipe with ingredients, instructions, nutrition, tips
-- **Model**: Uses `llama3.2:1b` (fast text generation)
+- **Model**: Uses `llama3.2:3b` (fast text generation)
 - **Timeout**: 120 seconds with AbortController
 - **Format**: Strict JSON schema for consistent parsing
 
@@ -79,7 +79,7 @@ const [selectedDish, setSelectedDish] = useState<{name: string, cuisine: string}
 1. User views AI recommendations (3 categories pre-loaded)
 2. User clicks "Learn More" on a recommended dish
 3. Modal opens with loading animation
-4. API generates detailed recipe using llama3.2:1b (~5-10 seconds)
+4. API generates detailed recipe using llama3.2:3b (~5-10 seconds)
 5. Recipe displays with ingredients, instructions, nutrition, tips
 6. User can switch to "Find Online" tab for external search links
 7. User closes modal

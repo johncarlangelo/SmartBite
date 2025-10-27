@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     
     // Model Configuration:
     // - llava:7b (Vision) - ONLY for image recognition: dish name & cuisine type
-    // - llama3.2:1b (Text) - For ALL text generation: nutrition, ingredients, recipe, recommendations
+    // - llama3.2:3b (Text) - For ALL text generation: nutrition, ingredients, recipe, recommendations
     const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava:7b'
-    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:1b'
+    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:3b'
     const onlineModel = process.env.OLLAMA_ONLINE_MODEL || visionModel
     const visionModelToUse = offlineFlag === 'true' ? visionModel : onlineModel
 
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     const cuisineType = visionResult.cuisineType || 'Mixed'
 
     // ============================================
-    // STAGE 2: TEXT MODEL (llama3.2:1b)
+    // STAGE 2: TEXT MODEL (llama3.2:3b)
     // Purpose: Generate ALL detailed text content
     // Why: llama3.2 is optimized for text generation, produces better quality content
     // Input: dishName + cuisineType from Stage 1
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 
     // NOTE: STAGE 3 (Recommendations) happens separately via /api/recommendations
     // The frontend will call that API endpoint with this analysis result
-    // Recommendations also use llama3.2:1b for text generation
+    // Recommendations also use llama3.2:3b for text generation
 
     // Validation
     if (!parsed.dishName || !Array.isArray(parsed.ingredients) || !parsed.recipe || !parsed.nutrition) {

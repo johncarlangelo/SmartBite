@@ -48,13 +48,13 @@ export async function POST(req: NextRequest) {
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
     
     // ============================================
-    // STAGE 3: TEXT MODEL (llama3.2:1b) - Recommendations
+    // STAGE 3: TEXT MODEL (llama3.2:3b) - Recommendations
     // Purpose: Generate food recommendations based on analyzed dishes
     // Why: llama3.2 excels at reasoning and generating creative suggestions
     // Input: Current dish analysis and/or recent dishes history
     // Output: Similar dishes, healthier alternatives, seasonal suggestions, pairings
     // ============================================
-    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:1b'
+    const textModel = process.env.OLLAMA_TEXT_MODEL || 'llama3.2:3b'
 
     let prompt = ''
     

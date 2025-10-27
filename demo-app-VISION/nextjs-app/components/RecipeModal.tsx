@@ -50,9 +50,24 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
       if (cached) {
         try {
           const cachedRecipe = JSON.parse(cached)
-          setRecipe(cachedRecipe)
+          console.log('📦 Loaded from cache:', cachedRecipe.dishName)
+          console.log('📊 Cached nutrition data:', cachedRecipe.nutrition)
+          
+          // Normalize cached data to ensure consistency
+          const normalizedCached = {
+            ...cachedRecipe,
+            nutrition: {
+              calories: cachedRecipe.nutrition?.calories || 0,
+              protein: cachedRecipe.nutrition?.protein || 'N/A',
+              carbs: cachedRecipe.nutrition?.carbs || 'N/A',
+              fat: cachedRecipe.nutrition?.fat || 'N/A'
+            }
+          }
+          
+          setRecipe(normalizedCached)
           setActiveTab('recipe')
         } catch (e) {
+          console.error('❌ Cache parse error:', e)
           // If cache is invalid, generate new recipe
           generateRecipe()
         }
@@ -95,14 +110,28 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
 
         const data = await response.json()
         console.log('✅ Recipe generation complete!')
+        console.log('📊 Recipe data received:', JSON.stringify(data.recipe, null, 2))
+        
+        // Validate and normalize nutrition data
+        const normalizedRecipe = {
+          ...data.recipe,
+          nutrition: {
+            calories: data.recipe.nutrition?.calories || 0,
+            protein: data.recipe.nutrition?.protein || 'N/A',
+            carbs: data.recipe.nutrition?.carbs || 'N/A',
+            fat: data.recipe.nutrition?.fat || 'N/A'
+          }
+        }
+        
+        console.log('📊 Normalized nutrition:', normalizedRecipe.nutrition)
         
         // Update state (only if component is still mounted)
-        setRecipe(data.recipe)
+        setRecipe(normalizedRecipe)
         setActiveTab('recipe')
         setIsLoading(false)
         
         // Cache the recipe in localStorage (persists even if modal closed)
-        localStorage.setItem(`recipe-${cacheKey}`, JSON.stringify(data.recipe))
+        localStorage.setItem(`recipe-${cacheKey}`, JSON.stringify(normalizedRecipe))
         console.log('💾 Recipe cached for future use')
         
         // Show notification if modal is closed
@@ -290,25 +319,25 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
                     <div className="grid grid-cols-4 gap-4 text-center">
                       <div>
                         <p className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
-                          {recipe.nutrition.calories}
+                          {recipe.nutrition?.calories || 0}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Calories</p>
                       </div>
                       <div>
                         <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {recipe.nutrition.protein}
+                          {recipe.nutrition?.protein || 'N/A'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Protein</p>
                       </div>
                       <div>
                         <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {recipe.nutrition.carbs}
+                          {recipe.nutrition?.carbs || 'N/A'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Carbs</p>
                       </div>
                       <div>
                         <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {recipe.nutrition.fat}
+                          {recipe.nutrition?.fat || 'N/A'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Fat</p>
                       </div>
@@ -321,17 +350,23 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
                       Ingredients
                     </h3>
                     <div className={`rounded-lg p-4 space-y-2 ${darkMode ? 'bg-slate-800/30' : 'bg-gray-100'}`}>
-                      {recipe.ingredients.map((ing, idx) => (
-                        <div key={idx} className="flex items-start gap-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${darkMode ? 'bg-blue-400' : 'bg-blue-600'}`} />
-                          <p className={darkMode ? 'text-slate-300' : 'text-gray-700'}>
-                            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {ing.amount}
-                            </span>{' '}
-                            {ing.item}
-                          </p>
-                        </div>
-                      ))}
+                      {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                        recipe.ingredients.map((ing, idx) => (
+                          <div key={idx} className="flex items-start gap-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 ${darkMode ? 'bg-blue-400' : 'bg-blue-600'}`} />
+                            <p className={darkMode ? 'text-slate-300' : 'text-gray-700'}>
+                              <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {ing.amount}
+                              </span>{' '}
+                              {ing.item}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                          No ingredients available
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -341,16 +376,22 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
                       Instructions
                     </h3>
                     <div className="space-y-4">
-                      {recipe.instructions.map((step, idx) => (
-                        <div key={idx} className="flex gap-4">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                            {idx + 1}
+                      {recipe.instructions && recipe.instructions.length > 0 ? (
+                        recipe.instructions.map((step, idx) => (
+                          <div key={idx} className="flex gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                              {idx + 1}
+                            </div>
+                            <p className={`flex-1 pt-1 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                              {step}
+                            </p>
                           </div>
-                          <p className={`flex-1 pt-1 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                            {step}
-                          </p>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                          No instructions available
+                        </p>
+                      )}
                     </div>
                   </div>
 

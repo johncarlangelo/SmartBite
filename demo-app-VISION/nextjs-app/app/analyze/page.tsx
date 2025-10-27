@@ -66,6 +66,17 @@ export default function AnalyzePage() {
     const [showHistory, setShowHistory] = useState(false)
     const [historyView, setHistoryView] = useState<'recent' | 'saved'>('recent')
     const [unreadCount, setUnreadCount] = useState(0)
+    
+    // Centralized recommendations data to prevent duplicate API calls
+    const [recommendationsData, setRecommendationsData] = useState<{
+        healthier: any[]
+        seasonal: any[]
+        pairing: any[]
+    } | null>(null)
+    
+    // Track if recommendations are currently loading to prevent duplicate requests
+    const recommendationsLoadingRef = useRef(false)
+    const lastAnalyzedDishRef = useRef<string>('')
 
     // Background images
     const backgroundImages = useMemo(() => [
@@ -352,6 +363,11 @@ export default function AnalyzePage() {
         setIsAnalyzing(true)
         setError(null)
         setProgress(0)
+        
+        // Reset recommendations data when starting a new analysis
+        setRecommendationsData(null)
+        recommendationsLoadingRef.current = false
+        lastAnalyzedDishRef.current = ''
 
         try {
             const cacheResult = await checkCache(file)
@@ -429,31 +445,83 @@ export default function AnalyzePage() {
     }
 
     // Asynchronous recommendations loading (non-blocking)
+    // Loads ALL 3 categories in parallel to prevent duplicate requests from child component
     const loadRecommendationsAsync = async (analysisData: AnalysisResult) => {
-        console.log('🎯 Loading AI recommendations in background...')
+        // Prevent duplicate requests for the same dish
+        const dishIdentifier = `${analysisData.dishName}-${analysisData.cuisineType}`
+        
+        if (recommendationsLoadingRef.current) {
+            console.log('⚠️ Recommendations already loading, skipping duplicate request')
+            return
+        }
+        
+        if (lastAnalyzedDishRef.current === dishIdentifier && recommendationsData) {
+            console.log('✓ Recommendations already loaded for this dish, skipping')
+            return
+        }
+        
+        console.log('🎯 Loading ALL AI recommendations in background (single batch)...')
+        recommendationsLoadingRef.current = true
+        lastAnalyzedDishRef.current = dishIdentifier
         setIsLoadingRecommendations(true)
         
         try {
-            // Preload healthier alternatives first (most commonly viewed)
-            const healthierResponse = await fetch('/api/recommendations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'healthier',
-                    currentDish: analysisData,
-                    offline
+            // Load all 3 categories in parallel (single batch) - prevents duplicate requests
+            const [healthierRes, seasonalRes, pairingRes] = await Promise.all([
+                fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'healthier',
+                        currentDish: analysisData,
+                        offline
+                    })
+                }),
+                fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'seasonal',
+                        currentDish: analysisData,
+                        month: new Date().getMonth() + 1,
+                        offline
+                    })
+                }),
+                fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'pairing',
+                        currentDish: analysisData,
+                        offline
+                    })
                 })
+            ])
+
+            const healthierData = healthierRes.ok ? await healthierRes.json() : { recommendations: [] }
+            const seasonalData = seasonalRes.ok ? await seasonalRes.json() : { recommendations: [] }
+            const pairingData = pairingRes.ok ? await pairingRes.json() : { recommendations: [] }
+
+            setRecommendationsData({
+                healthier: healthierData.recommendations || [],
+                seasonal: seasonalData.recommendations || [],
+                pairing: pairingData.recommendations || []
+            })
+
+            console.log('✓ All recommendations loaded successfully (3 API calls total):', {
+                healthier: healthierData.recommendations?.length || 0,
+                seasonal: seasonalData.recommendations?.length || 0,
+                pairing: pairingData.recommendations?.length || 0
             })
             
-            if (healthierResponse.ok) {
-                console.log('✓ Healthier alternatives preloaded')
-            }
-            
             setIsLoadingRecommendations(false)
+            recommendationsLoadingRef.current = false
         } catch (err) {
-            console.error('Background recommendations loading failed:', err)
+            console.error('❌ Background recommendations loading failed:', err)
             setIsLoadingRecommendations(false)
-            // Don't show error to user - recommendations will load on-demand
+            recommendationsLoadingRef.current = false
+            // Set empty data to prevent component from making its own requests
+            setRecommendationsData({ healthier: [], seasonal: [], pairing: [] })
         }
     }
 
@@ -1099,6 +1167,7 @@ export default function AnalyzePage() {
                                         currentDish={result}
                                         darkMode={darkMode}
                                         offline={offline}
+                                        preloadedData={recommendationsData}
                                     />
                                 </AnimatedSection>
                             </div>
