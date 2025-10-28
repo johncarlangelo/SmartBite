@@ -23,51 +23,111 @@ export default function CacheStats() {
     setStats(cacheStats)
   }
 
-  const clearCache = () => {
-    if (confirm(`Are you sure you want to clear ALL ${stats?.totalEntries || 0} cached analyses?\n\nThis action cannot be undone.`)) {
-      const cleared = ImageCacheManager.clearCache()
-      updateStats()
-      alert(`✓ Successfully cleared ${cleared} cache entries!`)
+  const clearCache = async () => {
+    if (confirm(`Are you sure you want to clear ALL ${stats?.totalEntries || 0} cached analyses?\n\nThis will clear BOTH client cache and server database.\n\nThis action cannot be undone.`)) {
+      try {
+        // Clear client-side localStorage cache
+        const clientCleared = ImageCacheManager.clearCache()
+        
+        // Clear server-side database cache
+        const serverResponse = await fetch('/api/clear-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'all' })
+        })
+        
+        if (!serverResponse.ok) {
+          throw new Error('Failed to clear server cache')
+        }
+        
+        const serverData = await serverResponse.json()
+        
+        updateStats()
+        alert(`✓ Successfully cleared:\n- ${clientCleared} client cache entries\n- ${serverData.clearedCount} server database entries!`)
+      } catch (error) {
+        console.error('Clear cache error:', error)
+        alert('❌ Error clearing cache. Check console for details.')
+      }
     }
   }
 
-  const clearOldEntries = (days: number) => {
+  const clearOldEntries = async (days: number) => {
     const expiredCount = ImageCacheManager.getCache().filter(entry => {
       const age = Date.now() - entry.timestamp
       return age >= days * 24 * 60 * 60 * 1000
     }).length
 
     if (expiredCount === 0) {
-      alert(`No entries older than ${days} days found.`)
+      alert(`No entries older than ${days} days found in client cache.`)
       return
     }
 
-    if (confirm(`Clear ${expiredCount} entries older than ${days} days?\n\nThis will free up storage space.`)) {
-      const cleared = ImageCacheManager.clearOldEntries(days)
-      updateStats()
-      alert(`✓ Successfully cleared ${cleared} old entries!`)
-      setShowClearOptions(false)
+    if (confirm(`Clear entries older than ${days} days?\n\nClient cache: ~${expiredCount} entries\n\nThis will also clear matching server database entries.`)) {
+      try {
+        // Clear client-side cache
+        const clientCleared = ImageCacheManager.clearOldEntries(days)
+        
+        // Clear server-side database
+        const serverResponse = await fetch('/api/clear-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'old', value: days.toString() })
+        })
+        
+        if (!serverResponse.ok) {
+          throw new Error('Failed to clear server cache')
+        }
+        
+        const serverData = await serverResponse.json()
+        
+        updateStats()
+        alert(`✓ Successfully cleared:\n- ${clientCleared} client cache entries\n- ${serverData.clearedCount} server database entries!`)
+        setShowClearOptions(false)
+      } catch (error) {
+        console.error('Clear old entries error:', error)
+        alert('❌ Error clearing old entries. Check console for details.')
+      }
     }
   }
 
-  const clearByCuisine = () => {
+  const clearByCuisine = async () => {
     const cuisine = prompt('Enter cuisine type to clear (e.g., "Italian", "Chinese"):')
     if (!cuisine) return
 
     const matchingEntries = ImageCacheManager.getByCuisine(cuisine)
     if (matchingEntries.length === 0) {
-      alert(`No entries found for cuisine: ${cuisine}`)
+      alert(`No entries found for cuisine: ${cuisine} in client cache`)
       return
     }
 
-    if (confirm(`Clear ${matchingEntries.length} ${cuisine} cuisine entries?`)) {
-      const cleared = ImageCacheManager.clearByCriteria({ cuisineType: cuisine })
-      updateStats()
-      alert(`✓ Successfully cleared ${cleared} ${cuisine} entries!`)
+    if (confirm(`Clear ${matchingEntries.length} ${cuisine} cuisine entries?\n\nThis will also clear matching server database entries.`)) {
+      try {
+        // Clear client-side cache
+        const clientCleared = ImageCacheManager.clearByCriteria({ cuisineType: cuisine })
+        
+        // Clear server-side database
+        const serverResponse = await fetch('/api/clear-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'cuisine', value: cuisine })
+        })
+        
+        if (!serverResponse.ok) {
+          throw new Error('Failed to clear server cache')
+        }
+        
+        const serverData = await serverResponse.json()
+        
+        updateStats()
+        alert(`✓ Successfully cleared:\n- ${clientCleared} client cache entries\n- ${serverData.clearedCount} server database entries!`)
+      } catch (error) {
+        console.error('Clear by cuisine error:', error)
+        alert('❌ Error clearing cuisine entries. Check console for details.')
+      }
     }
   }
 
-  const clearByCalories = () => {
+  const clearByCalories = async () => {
     const threshold = prompt('Clear entries with calories above:')
     if (!threshold) return
 
@@ -82,14 +142,34 @@ export default function CacheStats() {
     )
 
     if (matchingEntries.length === 0) {
-      alert(`No entries found with calories above ${calorieLimit}`)
+      alert(`No entries found with calories above ${calorieLimit} in client cache`)
       return
     }
 
-    if (confirm(`Clear ${matchingEntries.length} entries with more than ${calorieLimit} calories?`)) {
-      const cleared = ImageCacheManager.clearByCriteria({ caloriesAbove: calorieLimit })
-      updateStats()
-      alert(`✓ Successfully cleared ${cleared} high-calorie entries!`)
+    if (confirm(`Clear ${matchingEntries.length} entries with more than ${calorieLimit} calories?\n\nThis will also clear matching server database entries.`)) {
+      try {
+        // Clear client-side cache
+        const clientCleared = ImageCacheManager.clearByCriteria({ caloriesAbove: calorieLimit })
+        
+        // Clear server-side database
+        const serverResponse = await fetch('/api/clear-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'calories', value: calorieLimit.toString() })
+        })
+        
+        if (!serverResponse.ok) {
+          throw new Error('Failed to clear server cache')
+        }
+        
+        const serverData = await serverResponse.json()
+        
+        updateStats()
+        alert(`✓ Successfully cleared:\n- ${clientCleared} client cache entries\n- ${serverData.clearedCount} server database entries!`)
+      } catch (error) {
+        console.error('Clear by calories error:', error)
+        alert('❌ Error clearing high-calorie entries. Check console for details.')
+      }
     }
   }
 
@@ -212,7 +292,10 @@ export default function CacheStats() {
               <p>Oldest Entry: {formatDate(stats.oldestEntry)}</p>
               <p>Newest Entry: {formatDate(stats.newestEntry)}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                ⏰ Auto-cleanup: Entries older than 30 days are automatically removed
+                ⏰ Auto-cleanup: Entries older than 30 days are automatically removed from client cache
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                💾 All clear operations affect both client cache (localStorage) and server database (analyses.db)
               </p>
             </div>
             

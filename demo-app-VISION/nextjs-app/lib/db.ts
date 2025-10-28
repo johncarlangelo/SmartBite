@@ -96,6 +96,97 @@ class DatabaseService {
     return stmt.all(minCal, maxCal) as AnalysisRecord[];
   }
   
+  // Clear all analyses from database
+  clearAllAnalyses(): number {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM analyses');
+    const { count } = stmt.get() as { count: number };
+    
+    this.db.prepare('DELETE FROM analyses').run();
+    console.log(`🗑️ Cleared ${count} analyses from database`);
+    
+    return count;
+  }
+  
+  // Clear analyses older than specified days
+  clearOldAnalyses(days: number): number {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffISO = cutoffDate.toISOString();
+    
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM analyses WHERE createdAt < ?');
+    const { count } = stmt.get(cutoffISO) as { count: number };
+    
+    this.db.prepare('DELETE FROM analyses WHERE createdAt < ?').run(cutoffISO);
+    console.log(`🗑️ Cleared ${count} analyses older than ${days} days from database`);
+    
+    return count;
+  }
+  
+  // Clear analyses by cuisine type
+  clearAnalysesByCuisine(cuisineType: string): number {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM analyses WHERE json_extract(analysis, "$.cuisineType") = ?');
+    const { count } = stmt.get(cuisineType) as { count: number };
+    
+    this.db.prepare('DELETE FROM analyses WHERE json_extract(analysis, "$.cuisineType") = ?').run(cuisineType);
+    console.log(`🗑️ Cleared ${count} ${cuisineType} analyses from database`);
+    
+    return count;
+  }
+  
+  // Clear analyses with calories above threshold
+  clearAnalysesByCalories(caloriesAbove: number): number {
+    const stmt = this.db.prepare(`
+      SELECT COUNT(*) as count FROM analyses 
+      WHERE CAST(json_extract(analysis, '$.nutrition.calories') AS INTEGER) > ?
+    `);
+    const { count } = stmt.get(caloriesAbove) as { count: number };
+    
+    this.db.prepare(`
+      DELETE FROM analyses 
+      WHERE CAST(json_extract(analysis, '$.nutrition.calories') AS INTEGER) > ?
+    `).run(caloriesAbove);
+    console.log(`🗑️ Cleared ${count} high-calorie analyses from database`);
+    
+    return count;
+  }
+  
+  // Get database statistics
+  getDatabaseStats(): {
+    totalRecords: number;
+    oldestRecord: string | null;
+    newestRecord: string | null;
+    totalSize: number;
+  } {
+    const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM analyses');
+    const { count } = countStmt.get() as { count: number };
+    
+    if (count === 0) {
+      return {
+        totalRecords: 0,
+        oldestRecord: null,
+        newestRecord: null,
+        totalSize: 0
+      };
+    }
+    
+    const oldestStmt = this.db.prepare('SELECT createdAt FROM analyses ORDER BY createdAt ASC LIMIT 1');
+    const newestStmt = this.db.prepare('SELECT createdAt FROM analyses ORDER BY createdAt DESC LIMIT 1');
+    
+    const oldest = oldestStmt.get() as { createdAt: string } | undefined;
+    const newest = newestStmt.get() as { createdAt: string } | undefined;
+    
+    // Get database file size
+    const dbPath = path.join(process.cwd(), 'data', 'analyses.db');
+    const totalSize = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0;
+    
+    return {
+      totalRecords: count,
+      oldestRecord: oldest?.createdAt || null,
+      newestRecord: newest?.createdAt || null,
+      totalSize
+    };
+  }
+  
   // Close the database connection
   close(): void {
     this.db.close();
