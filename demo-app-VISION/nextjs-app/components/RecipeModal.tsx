@@ -184,15 +184,15 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`rounded-2xl shadow-2xl border w-full max-w-4xl max-h-[85vh] overflow-hidden my-auto ${
+        className={`rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden my-auto ${
           darkMode
-            ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'
-            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+            ? 'bg-gradient-to-br from-slate-900 to-slate-800'
+            : 'bg-gradient-to-br from-white to-gray-50'
         }`}
       >
         {/* Header */}
-        <div className={`sticky top-0 backdrop-blur-md border-b p-6 z-10 ${
-          darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-200'
+        <div className={`sticky top-0 backdrop-blur-md p-6 z-10 ${
+          darkMode ? 'bg-slate-900/95' : 'bg-white/95'
         }`}>
           <div className="flex items-start justify-between mb-4">
             <div>

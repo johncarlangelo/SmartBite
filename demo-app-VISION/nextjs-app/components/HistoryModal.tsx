@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'motion/react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'motion/react'
 import { History, Clock, Save, X, Trash2, Calendar } from 'lucide-react'
 
 type Nutrition = {
@@ -54,6 +55,11 @@ export default function HistoryModal({
 }: HistoryModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [historyView, setHistoryView] = useState<'recent' | 'saved'>('recent')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const cardClass = darkMode ? 'bg-slate-800/95' : 'bg-white'
   const textClass = darkMode ? 'text-white' : 'text-gray-900'
@@ -85,8 +91,8 @@ export default function HistoryModal({
         onClick={handleOpen}
         className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
           darkMode
-            ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
+            ? 'bg-slate-800 hover:bg-slate-700 text-white'
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
         }`}
       >
         <History size={18} />
@@ -94,15 +100,25 @@ export default function HistoryModal({
       </button>
 
       {/* Modal */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8"
-          onClick={handleClose}
-        >
-          <div
-            className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[85vh] overflow-y-auto scrollbar-hide border shadow-2xl my-auto`}
-            onClick={(e) => e.stopPropagation()}
+      {mounted && isOpen && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8"
+            style={{ position: 'fixed', inset: 0 }}
+            onClick={handleClose}
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className={`${cardClass} rounded-2xl p-6 max-w-4xl w-full max-h-[85vh] overflow-y-auto scrollbar-hide shadow-2xl my-auto`}
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-center justify-between mb-6">
               <h2 className={`text-2xl font-bold ${textClass} flex items-center gap-2`}>
                 <History size={28} />
@@ -320,8 +336,10 @@ export default function HistoryModal({
                 )}
               </div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
     </>
   )
