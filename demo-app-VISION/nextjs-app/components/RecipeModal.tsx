@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
 import { X, Clock, Users, ChefHat, Flame, Search, Youtube, Sparkles, ExternalLink } from 'lucide-react'
 import LoadingWithFacts from './LoadingWithFacts'
 
@@ -44,40 +43,42 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
   const generationPromiseRef = useState<{ current: Promise<void> | null }>(() => ({ current: null }))[0]
   
   useEffect(() => {
-    if (isOpen && !recipe) {
-      // Check if recipe exists in localStorage cache
-      const cached = localStorage.getItem(`recipe-${cacheKey}`)
-      if (cached) {
-        try {
-          const cachedRecipe = JSON.parse(cached)
-          console.log('📦 Loaded from cache:', cachedRecipe.dishName)
-          console.log('📊 Cached nutrition data:', cachedRecipe.nutrition)
-          
-          // Normalize cached data to ensure consistency
-          const normalizedCached = {
-            ...cachedRecipe,
-            nutrition: {
-              calories: cachedRecipe.nutrition?.calories || 0,
-              protein: cachedRecipe.nutrition?.protein || 'N/A',
-              carbs: cachedRecipe.nutrition?.carbs || 'N/A',
-              fat: cachedRecipe.nutrition?.fat || 'N/A'
+    if (isOpen) {
+      if (!recipe) {
+        // Check if recipe exists in localStorage cache
+        const cached = localStorage.getItem(`recipe-${cacheKey}`)
+        if (cached) {
+          try {
+            const cachedRecipe = JSON.parse(cached)
+            console.log('📦 Loaded from cache:', cachedRecipe.dishName)
+            console.log('📊 Cached nutrition data:', cachedRecipe.nutrition)
+            
+            // Normalize cached data to ensure consistency
+            const normalizedCached = {
+              ...cachedRecipe,
+              nutrition: {
+                calories: cachedRecipe.nutrition?.calories || 0,
+                protein: cachedRecipe.nutrition?.protein || 'N/A',
+                carbs: cachedRecipe.nutrition?.carbs || 'N/A',
+                fat: cachedRecipe.nutrition?.fat || 'N/A'
+              }
             }
+            
+            setRecipe(normalizedCached)
+            setActiveTab('recipe')
+          } catch (e) {
+            console.error('❌ Cache parse error:', e)
+            // If cache is invalid, generate new recipe
+            generateRecipe()
           }
-          
-          setRecipe(normalizedCached)
-          setActiveTab('recipe')
-        } catch (e) {
-          console.error('❌ Cache parse error:', e)
-          // If cache is invalid, generate new recipe
-          generateRecipe()
-        }
-      } else {
-        // Check if generation is already in progress
-        if (generationPromiseRef.current) {
-          console.log('🔄 Recipe generation already in progress...')
-          setIsLoading(true)
         } else {
-          generateRecipe()
+          // Check if generation is already in progress
+          if (generationPromiseRef.current) {
+            console.log('🔄 Recipe generation already in progress...')
+            setIsLoading(true)
+          } else {
+            generateRecipe()
+          }
         }
       }
     }
@@ -176,28 +177,19 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
   if (!isOpen) return null
 
   return (
-    <AnimatePresence>
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={handleClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-      />
-
-      {/* Modal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
-        className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl border z-50 overflow-hidden ${
-          darkMode
-            ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'
-            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
-        }`}
-      >
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] overflow-y-auto p-4 sm:p-6 md:p-8"
+      onClick={handleClose}
+    >
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`rounded-2xl shadow-2xl border w-full max-w-4xl max-h-[85vh] overflow-hidden ${
+            darkMode
+              ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'
+              : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+          }`}
+        >
         {/* Header */}
         <div className={`sticky top-0 backdrop-blur-md border-b p-6 z-10 ${
           darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-200'
@@ -254,7 +246,7 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(85vh-140px)] p-6">
+        <div className="overflow-y-auto max-h-[calc(85vh-140px)] p-6 pb-8">
           {activeTab === 'recipe' && (
             <>
               {isLoading && (
@@ -465,7 +457,8 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
             </div>
           )}
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+      </div>
+    </div>
   )
 }

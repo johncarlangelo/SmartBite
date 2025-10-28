@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { History, Clock, Save, X, Trash2, Calendar } from 'lucide-react'
 
@@ -59,8 +59,12 @@ export default function HistoryModal({
   const textClass = darkMode ? 'text-white' : 'text-gray-900'
   const textSecondaryClass = darkMode ? 'text-gray-400' : 'text-gray-600'
 
-  const handleClose = () => setIsOpen(false)
-  const handleOpen = () => setIsOpen(true)
+  const handleClose = () => {
+    setIsOpen(false)
+  }
+  const handleOpen = () => {
+    setIsOpen(true)
+  }
 
   const AnimatedHistoryItem = ({ children, index, delay }: { children: React.ReactNode; index: number; delay: number }) => {
     return (
@@ -92,7 +96,7 @@ export default function HistoryModal({
       {/* Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 md:p-8"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8"
           onClick={handleClose}
         >
           <div
