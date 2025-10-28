@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Clock, Users, ChefHat, Flame, Search, Youtube, Sparkles, ExternalLink } from 'lucide-react'
 import LoadingWithFacts from './LoadingWithFacts'
 
@@ -176,20 +177,19 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
 
   if (!isOpen) return null
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] overflow-y-auto p-4 sm:p-6 md:p-8"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8"
       onClick={handleClose}
     >
-      <div className="min-h-screen flex items-center justify-center py-8">
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className={`rounded-2xl shadow-2xl border w-full max-w-4xl max-h-[85vh] overflow-hidden ${
-            darkMode
-              ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'
-              : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
-          }`}
-        >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`rounded-2xl shadow-2xl border w-full max-w-4xl max-h-[85vh] overflow-hidden my-auto ${
+          darkMode
+            ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}
+      >
         {/* Header */}
         <div className={`sticky top-0 backdrop-blur-md border-b p-6 z-10 ${
           darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-200'
@@ -246,7 +246,7 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(85vh-140px)] p-6 pb-8">
+        <div className="overflow-y-auto max-h-[calc(85vh-140px)] p-6 pb-8 scrollbar-hide">
           {activeTab === 'recipe' && (
             <>
               {isLoading && (
@@ -458,7 +458,11 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
           )}
         </div>
       </div>
-      </div>
     </div>
   )
+
+  // Render modal using portal to escape parent DOM hierarchy
+  return typeof document !== 'undefined' 
+    ? createPortal(modalContent, document.body)
+    : null
 }
