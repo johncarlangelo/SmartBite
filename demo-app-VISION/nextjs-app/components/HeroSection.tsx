@@ -62,26 +62,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
                             Upload a photo of any dish and get instant insights on ingredients, nutrition facts, and authentic recipes powered by AI.
                         </motion.p>
 
-                        {/* CTA Buttons */}
+                        {/* CTA Button */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5, duration: 0.6 }}
-                            className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4"
+                            className="flex items-center justify-center lg:justify-start pt-4"
                         >
                             <Link href="/analyze" className="group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all flex items-center justify-center gap-2">
                                 <Camera size={20} />
                                 <span>Analyze Now</span>
                                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-20 transition-opacity"></div>
                             </Link>
-                            <button className={`w-full sm:w-auto px-8 py-4 backdrop-blur-xl rounded-xl font-semibold border transition-all flex items-center justify-center gap-2 ${
-                                darkMode
-                                    ? 'bg-slate-800/50 text-white border-slate-700 hover:bg-slate-800 hover:border-slate-600'
-                                    : 'bg-white/80 text-gray-900 border-gray-200 hover:bg-white hover:border-gray-300'
-                            }`}>
-                                <Upload size={20} />
-                                <span>Browse Menu</span>
-                            </button>
                         </motion.div>
                     </motion.div>
 
