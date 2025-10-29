@@ -1,11 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
-import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, ArrowLeft, Star, Database } from 'lucide-react'
+import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, ArrowLeft, Star, Database, Search, Youtube, ExternalLink } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
-import RecommendedDishes from '@/components/RecommendedDishes'
 import AnimatedList from '@/components/AnimatedList'
 import AIRecommendations from '@/components/AIRecommendations'
 import HistoryModal from '@/components/HistoryModal'
@@ -36,6 +35,18 @@ type AnalysisResult = {
     isHalal: boolean
     halalNotes?: string
     allergens: string[]
+    dietaryTags?: {
+        isHighProtein: boolean
+        containsGluten: boolean
+        containsDairy: boolean
+        isVegan: boolean
+        isKeto: boolean
+    }
+    healthScore?: {
+        overall: number
+        macroBalance: number
+        dietFriendly: number
+    }
 }
 
 type RecentAnalysis = AnalysisResult & {
@@ -70,6 +81,7 @@ export default function AnalyzePage() {
     
     // Centralized recommendations data to prevent duplicate API calls
     const [recommendationsData, setRecommendationsData] = useState<{
+        similar: any[]
         healthier: any[]
         seasonal: any[]
         pairing: any[]
@@ -461,8 +473,17 @@ export default function AnalyzePage() {
         setIsLoadingRecommendations(true)
         
         try {
-            // Load all 3 categories in parallel (single batch) - prevents duplicate requests
-            const [healthierRes, seasonalRes, pairingRes] = await Promise.all([
+            // Load all 4 categories in parallel (single batch) - prevents duplicate requests
+            const [similarRes, healthierRes, seasonalRes, pairingRes] = await Promise.all([
+                fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'similar',
+                        currentDish: analysisData,
+                        offline
+                    })
+                }),
                 fetch('/api/recommendations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -493,17 +514,20 @@ export default function AnalyzePage() {
                 })
             ])
 
+            const similarData = similarRes.ok ? await similarRes.json() : { recommendations: [] }
             const healthierData = healthierRes.ok ? await healthierRes.json() : { recommendations: [] }
             const seasonalData = seasonalRes.ok ? await seasonalRes.json() : { recommendations: [] }
             const pairingData = pairingRes.ok ? await pairingRes.json() : { recommendations: [] }
 
             setRecommendationsData({
+                similar: similarData.recommendations || [],
                 healthier: healthierData.recommendations || [],
                 seasonal: seasonalData.recommendations || [],
                 pairing: pairingData.recommendations || []
             })
 
-            console.log('✓ All recommendations loaded successfully (3 API calls total):', {
+            console.log('✓ All recommendations loaded successfully (4 API calls total):', {
+                similar: similarData.recommendations?.length || 0,
                 healthier: healthierData.recommendations?.length || 0,
                 seasonal: seasonalData.recommendations?.length || 0,
                 pairing: pairingData.recommendations?.length || 0
@@ -516,7 +540,7 @@ export default function AnalyzePage() {
             setIsLoadingRecommendations(false)
             recommendationsLoadingRef.current = false
             // Set empty data to prevent component from making its own requests
-            setRecommendationsData({ healthier: [], seasonal: [], pairing: [] })
+            setRecommendationsData({ similar: [], healthier: [], seasonal: [], pairing: [] })
         }
     }
 
@@ -715,8 +739,8 @@ export default function AnalyzePage() {
             </header>
 
             {/* Main Content - Column Layout */}
-            <main className="px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-                <div className="w-full max-w-[80%] mx-auto space-y-8">
+            <main className="px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+                <div className="w-full max-w-[80%] mx-auto space-y-5">
                     {/* Upload Section */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -727,8 +751,8 @@ export default function AnalyzePage() {
                                 : 'bg-white/80 border-gray-200 shadow-2xl'
                             }`}
                     >
-                        <div className="p-10 lg:p-16">
-                            <div className="mb-8">
+                        <div className="p-8 lg:p-12">
+                            <div className="mb-6">
                                 <h2 className={`text-4xl font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     Upload & Analyze
                                 </h2>
@@ -760,7 +784,7 @@ export default function AnalyzePage() {
                                         </p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-6 py-16">
+                                    <div className="space-y-4 py-12">
                                         <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                                             <Upload className="text-white" size={40} />
                                         </div>
@@ -826,15 +850,15 @@ export default function AnalyzePage() {
                                     : 'bg-white/80 border-gray-200 shadow-2xl'
                                 }`}
                         >
-                            <div className="p-10 lg:p-16 space-y-8">
+                            <div className="p-8 lg:p-12 space-y-5">
                                 {/* Dish Info */}
                                 <AnimatedSection delay={0}>
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <h2 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            <h2 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                                 {result.dishName}
                                             </h2>
-                                            <p className={`mt-3 text-xl ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                            <p className={`mt-2 text-lg ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                                                 {result.cuisineType}
                                             </p>
                                         </div>
@@ -868,69 +892,140 @@ export default function AnalyzePage() {
                                     </motion.div>
                                 )}
 
-                                {/* Halal Status & Allergens */}
+                                {/* Dietary Information */}
                                 <AnimatedSection delay={0.05}>
-                                    <div className="flex flex-wrap gap-4">
-                                        {/* Halal Status Badge */}
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: 0.1, duration: 0.3 }}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
-                                                result.isHalal
-                                                    ? darkMode
-                                                        ? 'bg-green-500/20 border-green-500/50 text-green-400'
-                                                        : 'bg-green-50 border-green-300 text-green-700'
-                                                    : darkMode
-                                                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
-                                                        : 'bg-orange-50 border-orange-300 text-orange-700'
-                                            }`}
-                                        >
-                                            <span className="text-xl">{result.isHalal ? '✓' : 'ⓘ'}</span>
-                                            <div>
-                                                <p className="font-bold text-sm">
-                                                    {result.isHalal ? 'Halal Certified' : 'Check Ingredients'}
-                                                </p>
-                                                {result.halalNotes && (
-                                                    <p className="text-xs opacity-80">{result.halalNotes}</p>
-                                                )}
-                                            </div>
-                                        </motion.div>
-
-                                        {/* Allergen Alerts */}
-                                        {result.allergens && result.allergens.length > 0 && (
+                                    <div className={`rounded-2xl p-6 border ${
+                                        darkMode 
+                                            ? 'bg-slate-800/50 border-slate-700/50 backdrop-blur-sm' 
+                                            : 'bg-white border-gray-200 shadow-sm'
+                                    }`}>
+                                        <h3 className={`text-xl font-bold mb-5 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            <span className="text-2xl">🏷️</span>
+                                            Dietary Information
+                                        </h3>
+                                        
+                                        {/* Halal Status, Allergens & Dietary Tags */}
+                                        <div className="flex flex-wrap gap-3">
+                                            {/* Halal Status Badge */}
                                             <motion.div
                                                 initial={{ opacity: 0, scale: 0.9 }}
                                                 animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ delay: 0.15, duration: 0.3 }}
+                                                transition={{ delay: 0.1, duration: 0.3 }}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
-                                                    darkMode
-                                                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
-                                                        : 'bg-red-50 border-red-300 text-red-700'
+                                                    result.isHalal
+                                                        ? darkMode
+                                                            ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                                                            : 'bg-green-50 border-green-300 text-green-700'
+                                                        : darkMode
+                                                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                                                            : 'bg-orange-50 border-orange-300 text-orange-700'
                                                 }`}
                                             >
-                                                <span className="text-xl">⚠️</span>
+                                                <span className="text-xl">{result.isHalal ? '✓' : 'ⓘ'}</span>
                                                 <div>
-                                                    <p className="font-bold text-sm">Allergen Alert</p>
-                                                    <p className="text-xs opacity-80">
-                                                        Contains: {result.allergens.join(', ')}
+                                                    <p className="font-bold text-sm">
+                                                        {result.isHalal ? 'Halal Certified' : 'Check Ingredients'}
                                                     </p>
+                                                    {result.halalNotes && (
+                                                        <p className="text-xs opacity-80">{result.halalNotes}</p>
+                                                    )}
                                                 </div>
                                             </motion.div>
-                                        )}
+
+                                            {/* Allergen Alerts */}
+                                            {result.allergens && result.allergens.length > 0 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    transition={{ delay: 0.15, duration: 0.3 }}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
+                                                        darkMode
+                                                            ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                                                            : 'bg-red-50 border-red-300 text-red-700'
+                                                    }`}
+                                                >
+                                                    <span className="text-xl">⚠️</span>
+                                                    <div>
+                                                        <p className="font-bold text-sm">Allergen Alert</p>
+                                                        <p className="text-xs opacity-80">
+                                                            Contains: {result.allergens.join(', ')}
+                                                        </p>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+
+                                            {/* Dietary Tags */}
+                                            {(() => {
+                                                    // Use AI-generated dietary tags if available
+                                                    const aiTags = result.dietaryTags;
+                                                    const isHighProtein = aiTags?.isHighProtein ?? (result.nutrition.protein_g > 20);
+                                                    const containsDairy = aiTags?.containsDairy ?? (result.allergens?.some(a => a.toLowerCase().includes('dairy')) || false);
+                                                    const isVegan = aiTags?.isVegan ?? (!result.allergens?.some(a => ['dairy', 'eggs', 'meat'].includes(a.toLowerCase())));
+                                                    const isKeto = aiTags?.isKeto ?? (result.nutrition.carbs_g < 10 && result.nutrition.fat_g > 15);
+                                                    
+                                                    const tags = [
+                                                        { 
+                                                            label: isHighProtein ? 'High Protein' : 'Moderate Protein',
+                                                            icon: '💪',
+                                                            active: isHighProtein,
+                                                            color: isHighProtein ? 'blue' : 'gray'
+                                                        },
+                                                        {
+                                                            label: containsDairy ? 'Contains Dairy' : 'Dairy-Free',
+                                                            icon: '🥛',
+                                                            active: containsDairy,
+                                                            color: containsDairy ? 'yellow' : 'green'
+                                                        },
+                                                        {
+                                                            label: isVegan ? 'Vegan' : 'Not Vegan',
+                                                            icon: '🌱',
+                                                            active: isVegan,
+                                                            color: isVegan ? 'green' : 'red'
+                                                        },
+                                                        {
+                                                            label: isKeto ? 'Keto Friendly' : 'Not Keto',
+                                                            icon: '🥑',
+                                                            active: isKeto,
+                                                            color: isKeto ? 'green' : 'red'
+                                                        }
+                                                    ];
+                                                    
+                                                    return tags.map((tag, index) => (
+                                                        <motion.div
+                                                            key={index}
+                                                            initial={{ opacity: 0, scale: 0.9 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            transition={{ delay: 0.2 + index * 0.05, duration: 0.3 }}
+                                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
+                                                                tag.color === 'blue' ? (darkMode ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-blue-50 border-blue-300 text-blue-700') :
+                                                                tag.color === 'green' ? (darkMode ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-green-50 border-green-300 text-green-700') :
+                                                                tag.color === 'orange' ? (darkMode ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' : 'bg-orange-50 border-orange-300 text-orange-700') :
+                                                                tag.color === 'yellow' ? (darkMode ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-yellow-50 border-yellow-300 text-yellow-700') :
+                                                                tag.color === 'red' ? (darkMode ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-red-50 border-red-300 text-red-700') :
+                                                                (darkMode ? 'bg-slate-700/20 border-slate-600/50 text-gray-400' : 'bg-gray-50 border-gray-300 text-gray-700')
+                                                            }`}
+                                                        >
+                                                            <span className="text-xl">{tag.icon}</span>
+                                                            <div>
+                                                                <p className="font-bold text-sm">{tag.label}</p>
+                                                            </div>
+                                                        </motion.div>
+                                                    ));
+                                                })()}
+                                        </div>
                                     </div>
                                 </AnimatedSection>
 
                                 {/* Nutrition Facts */}
                                 <AnimatedSection delay={0.1}>
                                     <div>
-                                        <h3 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        <h3 className={`text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                             <Gauge className={darkMode ? 'text-green-400' : 'text-green-600'} size={28} />
                                             Nutrition Facts
                                         </h3>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                                             {/* Left side - Nutrition values */}
-                                            <div className="space-y-4">
+                                            <div className="space-y-3">
                                                 {[
                                                     { label: 'Calories', value: result.nutrition.calories, unit: 'kcal', color: 'text-orange-400', bgColor: darkMode ? 'bg-orange-500/20' : 'bg-orange-50', borderColor: darkMode ? 'border-orange-500/30' : 'border-orange-200' },
                                                     { label: 'Protein', value: result.nutrition.protein_g, unit: 'g', color: 'text-blue-400', bgColor: darkMode ? 'bg-blue-500/20' : 'bg-blue-50', borderColor: darkMode ? 'border-blue-500/30' : 'border-blue-200' },
@@ -963,18 +1058,18 @@ export default function AnalyzePage() {
                                                 className="flex flex-col items-center justify-center"
                                             >
                                                 {/* Pie Chart with Labels */}
-                                                <div className="relative w-96 h-96">
-                                                    <svg viewBox="0 0 400 400" className="transform -rotate-90">
+                                                <div className="relative w-[500px] h-[500px]">
+                                                    <svg viewBox="0 0 500 500" className="transform -rotate-90">
                                                         {(() => {
                                                             const total = result.nutrition.protein_g + result.nutrition.carbs_g + result.nutrition.fat_g;
                                                             let currentAngle = 0;
                                                             const colors = ['#60a5fa', '#c084fc', '#fbbf24']; // blue, purple, yellow
                                                             const values = [result.nutrition.protein_g, result.nutrition.carbs_g, result.nutrition.fat_g];
                                                             const labels = ['Protein', 'Carbs', 'Fat'];
-                                                            const centerX = 200;
-                                                            const centerY = 200;
-                                                            const radius = 110; // Pie chart radius
-                                                            const labelRadius = 160; // Label position (further out)
+                                                            const centerX = 250;
+                                                            const centerY = 250;
+                                                            const radius = 140;
+                                                            const labelRadius = 200;
                                                             
                                                             return values.map((value, index) => {
                                                                 const percentage = (value / total) * 100;
@@ -991,7 +1086,6 @@ export default function AnalyzePage() {
                                                                 const endY = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
                                                                 const largeArc = angle > 180 ? 1 : 0;
                                                                 
-                                                                // Calculate label position (outside the pie)
                                                                 const labelX = centerX + labelRadius * Math.cos((midAngle * Math.PI) / 180);
                                                                 const labelY = centerY + labelRadius * Math.sin((midAngle * Math.PI) / 180);
                                                                 
@@ -1012,7 +1106,6 @@ export default function AnalyzePage() {
                                                                             animate={{ opacity: 0.8 }}
                                                                             transition={{ delay: 0.5 + index * 0.1, duration: 0.3 }}
                                                                         />
-                                                                        {/* Label text */}
                                                                         <g transform={`rotate(90 ${labelX} ${labelY})`}>
                                                                             <motion.text
                                                                                 x={labelX}
@@ -1043,16 +1136,15 @@ export default function AnalyzePage() {
                                                             });
                                                         })()}
                                                     </svg>
-                                                    {/* Center circle for donut effect with Calories */}
-                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
+                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
                                                         <div className="text-center">
-                                                            <p className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                            <p className={`text-3xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                                                                 {result.nutrition.calories}
                                                             </p>
-                                                            <p className={`text-xs font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                            <p className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                                                                 kcal
                                                             </p>
-                                                            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                            <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                                                 Calories
                                                             </p>
                                                         </div>
@@ -1066,7 +1158,7 @@ export default function AnalyzePage() {
                                 {/* Ingredients */}
                                 <AnimatedSection delay={0.2}>
                                     <div>
-                                        <h3 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        <h3 className={`text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                             <Salad className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} size={28} />
                                             Ingredients
                                         </h3>
@@ -1092,11 +1184,11 @@ export default function AnalyzePage() {
                                 {/* Recipe */}
                                 <AnimatedSection delay={0.3}>
                                     <div>
-                                        <h3 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        <h3 className={`text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                             <ChefHat className={darkMode ? 'text-pink-400' : 'text-pink-600'} size={28} />
                                             Recipe
                                         </h3>
-                                        <div className="space-y-6">
+                                        <div className="space-y-4">
                                             <div className="flex gap-4 text-sm flex-wrap">
                                                 <motion.div
                                                     initial={{ opacity: 0, x: -20 }}
@@ -1132,7 +1224,7 @@ export default function AnalyzePage() {
                                                     </span>
                                                 </motion.div>
                                             </div>
-                                            <ol className="space-y-4">
+                                            <ol className="space-y-3">
                                                 {result.recipe.steps.map((step, index) => (
                                                     <motion.li
                                                         key={index}
@@ -1159,16 +1251,83 @@ export default function AnalyzePage() {
                                     </div>
                                 </AnimatedSection>
 
-                                {/* Recommended Dishes */}
-                                <AnimatedSection delay={0.4}>
-                                    <RecommendedDishes 
-                                        ingredients={result.ingredients} 
-                                        darkMode={darkMode}
-                                    />
+                                {/* Find More Recipes */}
+                                <AnimatedSection delay={0.35}>
+                                    <div className={`rounded-2xl p-6 border ${
+                                        darkMode 
+                                            ? 'bg-slate-800/50 border-slate-700/50 backdrop-blur-sm' 
+                                            : 'bg-white border-gray-200 shadow-sm'
+                                    }`}>
+                                        <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            <ExternalLink className={darkMode ? 'text-blue-400' : 'text-blue-600'} size={28} />
+                                            Find More Recipes Online
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <motion.button
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.4, duration: 0.3 }}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    const query = encodeURIComponent(`${result.dishName} recipe`)
+                                                    window.open(`https://www.google.com/search?q=${query}`, '_blank')
+                                                }}
+                                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white p-4 rounded-xl flex items-center gap-3 transition-all"
+                                            >
+                                                <Search className="w-5 h-5 flex-shrink-0" />
+                                                <div className="text-left flex-1">
+                                                    <p className="font-semibold text-sm">Search on Google</p>
+                                                    <p className="text-xs text-blue-200">Find recipes across the web</p>
+                                                </div>
+                                                <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                            </motion.button>
+
+                                            <motion.button
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.45, duration: 0.3 }}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    const query = encodeURIComponent(`${result.dishName} recipe`)
+                                                    window.open(`https://www.youtube.com/results?search_query=${query}+recipe`, '_blank')
+                                                }}
+                                                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white p-4 rounded-xl flex items-center gap-3 transition-all"
+                                            >
+                                                <Youtube className="w-5 h-5 flex-shrink-0" />
+                                                <div className="text-left flex-1">
+                                                    <p className="font-semibold text-sm">Watch on YouTube</p>
+                                                    <p className="text-xs text-red-200">Step-by-step videos</p>
+                                                </div>
+                                                <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                            </motion.button>
+
+                                            <motion.button
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.5, duration: 0.3 }}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    const query = encodeURIComponent(`${result.dishName} recipe`)
+                                                    window.open(`https://www.allrecipes.com/search?q=${query}`, '_blank')
+                                                }}
+                                                className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white p-4 rounded-xl flex items-center gap-3 transition-all"
+                                            >
+                                                <ChefHat className="w-5 h-5 flex-shrink-0" />
+                                                <div className="text-left flex-1">
+                                                    <p className="font-semibold text-sm">Browse AllRecipes</p>
+                                                    <p className="text-xs text-orange-200">Community recipes</p>
+                                                </div>
+                                                <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                            </motion.button>
+                                        </div>
+                                    </div>
                                 </AnimatedSection>
 
                                 {/* AI Recommendations */}
-                                <AnimatedSection delay={0.5}>
+                                <AnimatedSection delay={0.4}>
                                     <AIRecommendations 
                                         currentDish={result}
                                         darkMode={darkMode}

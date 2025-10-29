@@ -23,8 +23,10 @@ SmartBite is an AI-powered food analysis application that uses a sophisticated 3
 - **Nutrition Facts:** Calories, protein, carbs, fat
 - **Ingredients:** 8-12 specific ingredients
 - **Recipe:** Servings, prep/cook time, detailed steps
+- **Dietary Tags:** High protein, gluten status, dairy status, vegan, keto, halal
+- **Health Scores:** Overall health (0-100), macro balance (0-100), diet friendliness (0-100)
 
-**Why llama3.2?** Optimized for text generation, produces detailed accurate content.
+**Why llama3.2?** Optimized for text generation and reasoning, produces detailed accurate content with intelligent dietary analysis.
 
 ### Stage 3: Recommendations (llama3.2:3b)
 **Purpose:** Intelligent food suggestions  

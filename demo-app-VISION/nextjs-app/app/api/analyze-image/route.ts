@@ -24,6 +24,18 @@ type AnalysisResult = {
   allergens: string[]
   isFood?: boolean
   confidenceFood?: number
+  dietaryTags?: {
+    isHighProtein: boolean
+    containsGluten: boolean
+    containsDairy: boolean
+    isVegan: boolean
+    isKeto: boolean
+  }
+  healthScore?: {
+    overall: number
+    macroBalance: number
+    dietFriendly: number
+  }
 }
 
 const SUPPORTED_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/jpg"])
@@ -145,7 +157,19 @@ export async function POST(req: NextRequest) {
       '  },',
       '  "isHalal": boolean (based ONLY on the ingredients list above - true if all listed ingredients are halal),',
       '  "halalNotes": string (ONLY mention ingredients from the ingredients list above if not halal. Leave empty if halal.),',
-      '  "allergens": string[] (based ONLY on the ingredients list above: "Dairy", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat/Gluten", "Soy", etc.)',
+      '  "allergens": string[] (based ONLY on the ingredients list above: "Dairy", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat/Gluten", "Soy", etc.),',
+      '  "dietaryTags": {',
+      '    "isHighProtein": boolean (true if protein >= 20g per serving),',
+      '    "containsGluten": boolean (true if contains wheat, barley, rye, or gluten-containing ingredients),',
+      '    "containsDairy": boolean (true if contains milk, cheese, butter, cream, or dairy products),',
+      '    "isVegan": boolean (true if NO animal products: no meat, dairy, eggs, honey),',
+      '    "isKeto": boolean (true if carbs < 10g AND fat > 15g per serving)',
+      '  },',
+      '  "healthScore": {',
+      '    "overall": number (0-100, consider: balanced macros, reasonable calories, nutrient density),',
+      '    "macroBalance": number (0-100, ideal ratios: 30% protein, 50% carbs, 20% fat),',
+      '    "dietFriendly": number (0-100, based on: high protein, moderate carbs/fat, reasonable calories)',
+      '  }',
       '}',
       '',
       'CRITICAL RULES FOR CONSISTENCY:',
@@ -154,6 +178,13 @@ export async function POST(req: NextRequest) {
       '3. "halalNotes" can ONLY mention ingredients that appear in the "ingredients" list',
       '4. "allergens" can ONLY mention allergens from ingredients in the "ingredients" list',
       '5. Do NOT assume extra toppings or additions that are not essential to the basic dish',
+      '6. "dietaryTags" must be accurately calculated from nutrition and ingredients',
+      '7. "healthScore" should reflect actual nutritional quality',
+      '',
+      'Health Score Guidelines:',
+      '- overall: 80-100 (excellent nutrients, balanced), 60-79 (good), 40-59 (moderate), 0-39 (poor nutrition)',
+      '- macroBalance: 100 (perfect 30/50/20), penalize deviations',
+      '- dietFriendly: reward high protein, moderate carbs, healthy fats, reasonable calories',
       '',
       'Examples:',
       '- Hash Browns: Just potatoes, oil, salt, pepper (no bacon unless specifically stated)',
@@ -199,7 +230,19 @@ export async function POST(req: NextRequest) {
       halalNotes: detailResult.halalNotes,
       allergens: detailResult.allergens || [],
       isFood: true,
-      confidenceFood: confidence
+      confidenceFood: confidence,
+      dietaryTags: detailResult.dietaryTags || {
+        isHighProtein: false,
+        containsGluten: false,
+        containsDairy: false,
+        isVegan: false,
+        isKeto: false
+      },
+      healthScore: detailResult.healthScore || {
+        overall: 50,
+        macroBalance: 50,
+        dietFriendly: 50
+      }
     }
 
     // NOTE: STAGE 3 (Recommendations) happens separately via /api/recommendations

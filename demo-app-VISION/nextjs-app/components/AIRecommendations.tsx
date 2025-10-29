@@ -46,6 +46,7 @@ type AIRecommendationsProps = {
   darkMode: boolean
   offline?: boolean
   preloadedData?: {
+    similar: any[]
     healthier: any[]
     seasonal: any[]
     pairing: any[]
@@ -62,8 +63,9 @@ type CategoryRecommendations = {
 }
 
 const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMode, offline = false, preloadedData }: AIRecommendationsProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('healthier')
+  const [activeCategory, setActiveCategory] = useState<string>('similar')
   const [categoryData, setCategoryData] = useState<CategoryRecommendations>({
+    similar: { recommendations: [], isLoading: false, error: null, isLoaded: false },
     healthier: { recommendations: [], isLoading: false, error: null, isLoaded: false },
     seasonal: { recommendations: [], isLoading: false, error: null, isLoaded: false },
     pairing: { recommendations: [], isLoading: false, error: null, isLoaded: false },
@@ -73,6 +75,14 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
   const hasLoadedRef = useRef(false) // Prevent multiple loads
 
   const categories: RecommendationCategory[] = [
+    {
+      id: 'similar',
+      title: 'Related Dishes',
+      icon: <Sparkles size={20} />,
+      color: darkMode ? 'text-purple-400' : 'text-purple-600',
+      gradient: 'from-purple-500 to-pink-500',
+      description: 'You might also like'
+    },
     {
       id: 'healthier',
       title: 'Healthier Alternatives',
@@ -110,10 +120,16 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
       return
     }
     
-    if (preloadedData && preloadedData.healthier && preloadedData.seasonal && preloadedData.pairing) {
+    if (preloadedData && preloadedData.similar && preloadedData.healthier && preloadedData.seasonal && preloadedData.pairing) {
       // Use preloaded data from parent component
       console.log('✓ Using preloaded recommendations data (no API calls needed)')
       setCategoryData({
+        similar: {
+          recommendations: preloadedData.similar,
+          isLoading: false,
+          error: null,
+          isLoaded: true
+        },
         healthier: {
           recommendations: preloadedData.healthier,
           isLoading: false,
@@ -144,7 +160,7 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
 
   const loadAllRecommendations = async () => {
     // Load all categories in parallel
-    const categoriesToLoad = ['healthier', 'seasonal', 'pairing']
+    const categoriesToLoad = ['similar', 'healthier', 'seasonal', 'pairing']
     
     await Promise.all(
       categoriesToLoad.map(category => loadRecommendations(category))
@@ -232,7 +248,7 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
       </div>
 
       {/* Category Tabs */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {categories.map((category) => (
           <motion.button
             key={category.id}
@@ -305,8 +321,11 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="space-y-6"
           >
+            {/* Recommendations Grid */}
+            {currentData.recommendations.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {currentData.recommendations.map((rec, index) => (
               <motion.div
                 key={index}
@@ -391,6 +410,8 @@ const AIRecommendations = memo(function AIRecommendations({ currentDish, darkMod
                 </button>
               </motion.div>
             ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

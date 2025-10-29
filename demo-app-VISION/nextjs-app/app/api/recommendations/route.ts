@@ -60,7 +60,12 @@ export async function POST(req: NextRequest) {
     
     switch (type) {
       case 'similar':
-        prompt = generateSimilarDishesPrompt(recentDishes || [])
+        // Support both currentDish (similar to analyzed dish) and recentDishes (based on history)
+        if (currentDish) {
+          prompt = generateSimilarToCurrentDishPrompt(currentDish)
+        } else {
+          prompt = generateSimilarDishesPrompt(recentDishes || [])
+        }
         break
       case 'healthier':
         prompt = generateHealthierAlternativesPrompt(currentDish!)
@@ -141,6 +146,39 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+function generateSimilarToCurrentDishPrompt(currentDish: DishAnalysis): string {
+  return [
+    'You are a food recommendation AI. Suggest 4-6 dishes similar to the analyzed dish.',
+    '',
+    `Current dish: ${currentDish.dishName} (${currentDish.cuisineType})`,
+    `Calories: ${currentDish.nutrition.calories} cal`,
+    `Nutrition: Protein ${currentDish.nutrition.protein_g}g, Carbs ${currentDish.nutrition.carbs_g}g, Fat ${currentDish.nutrition.fat_g}g`,
+    `Key ingredients: ${currentDish.ingredients.slice(0, 5).join(', ')}`,
+    '',
+    'STRICT JSON SCHEMA:',
+    '{',
+    '  "recommendations": [',
+    '    {',
+    '      "dishName": string,',
+    '      "cuisineType": string,',
+    '      "description": string (1 short sentence),',
+    '      "reason": string (why it\'s similar - 1 short sentence),',
+    '      "estimatedCalories": number,',
+    '      "estimatedPrepTime": number (minutes),',
+    '      "matchScore": number (75-95)',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'Rules:',
+    '- Suggest dishes with similar ingredients, cuisine, or cooking methods',
+    '- Include a mix of same cuisine and fusion dishes',
+    '- Keep descriptions VERY brief',
+    '- Match score should reflect similarity',
+    '- Output ONLY valid JSON',
+  ].join('\n')
 }
 
 function generateSimilarDishesPrompt(recentDishes: DishAnalysis[]): string {

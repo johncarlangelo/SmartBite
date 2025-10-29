@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import HeroSection from '@/components/HeroSection'
+import OverviewSection from '@/components/OverviewSection'
 import FoodCarousel from '@/components/FoodCarousel'
 import AnimatedBackground from '@/components/AnimatedBackground'
 import { Moon, Sun } from 'lucide-react'
@@ -64,6 +65,7 @@ export default function Home() {
 
       <Navbar darkMode={darkMode} isOnline={isOnline} />
       <HeroSection darkMode={darkMode} />
+      <OverviewSection darkMode={darkMode} />
       <FoodCarousel darkMode={darkMode} isOnline={isOnline} />
       
       {/* Dark Mode Toggle Button */}
