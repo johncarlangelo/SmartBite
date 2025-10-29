@@ -1023,7 +1023,7 @@ export default function AnalyzePage() {
                                             <Gauge className={darkMode ? 'text-green-400' : 'text-green-600'} size={28} />
                                             Nutrition Facts
                                         </h3>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center -mt-20">
                                             {/* Left side - Nutrition values */}
                                             <div className="space-y-3">
                                                 {[
