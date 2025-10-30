@@ -217,7 +217,6 @@ export default function RecipeModal({ isOpen, onClose, dishName, cuisineType, da
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('recipe')}
-              disabled={isLoading}
               className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 activeTab === 'recipe'
                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'

@@ -1251,7 +1251,7 @@ export default function AnalyzePage() {
                                     </div>
                                 </AnimatedSection>
 
-                                {/* Find More Recipes */}
+                                {/* Find Recipes Online */}
                                 <AnimatedSection delay={0.35}>
                                     <div className={`rounded-2xl p-6 border ${
                                         darkMode 
@@ -1260,7 +1260,7 @@ export default function AnalyzePage() {
                                     }`}>
                                         <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                             <ExternalLink className={darkMode ? 'text-blue-400' : 'text-blue-600'} size={28} />
-                                            Find More Recipes Online
+                                            Find Recipes Online
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             <motion.button
