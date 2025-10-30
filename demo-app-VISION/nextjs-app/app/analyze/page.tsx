@@ -11,6 +11,8 @@ import AIRecommendations from '@/components/AIRecommendations'
 import HistoryModal from '@/components/HistoryModal'
 import LoadingWithFacts from '@/components/LoadingWithFacts'
 import { ResultsSkeleton } from '@/components/SkeletonCard'
+import CacheClearModal from '@/components/CacheClearModal'
+import CacheEmptyModal from '@/components/CacheEmptyModal'
 import { ImageCacheManager, generateBlurhash, calculateImageHash } from '@/lib/imageCache'
 import { compressImage, shouldCompress } from '@/lib/imageCompression'
 
@@ -79,6 +81,10 @@ export default function AnalyzePage() {
     const [savedSuccess, setSavedSuccess] = useState(false)
     const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
     const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([])
+    const [showCacheClearModal, setShowCacheClearModal] = useState(false)
+    const [showCacheEmptyModal, setShowCacheEmptyModal] = useState(false)
+    const [cacheStats, setCacheStats] = useState({ entries: 0, size: '0' })
+    const [showCacheSuccess, setShowCacheSuccess] = useState(false)
     
     // Centralized recommendations data to prevent duplicate API calls
     const [recommendationsData, setRecommendationsData] = useState<{
@@ -189,19 +195,24 @@ export default function AnalyzePage() {
         const cacheSize = (stats.cacheSize / 1024).toFixed(2)
         
         if (stats.totalEntries === 0) {
-            alert('Cache is already empty!')
+            setShowCacheEmptyModal(true)
             return
         }
 
-        if (confirm(
-            `Clear image cache?\n\n` +
-            `• Entries: ${stats.totalEntries}\n` +
-            `• Size: ${cacheSize} KB\n\n` +
-            `This will remove all cached analysis results.\nYou can still view recent and saved analyses.`
-        )) {
-            const cleared = ImageCacheManager.clearCache()
-            alert(`✓ Successfully cleared ${cleared} cache entries!\n\nFreed up ${cacheSize} KB of storage.`)
-        }
+        // Show modal with cache stats
+        setCacheStats({ entries: stats.totalEntries, size: cacheSize })
+        setShowCacheClearModal(true)
+    }
+
+    const confirmClearCache = () => {
+        const cleared = ImageCacheManager.clearCache()
+        setShowCacheSuccess(true)
+        
+        // Auto-close success modal after 2 seconds
+        setTimeout(() => {
+            setShowCacheClearModal(false)
+            setShowCacheSuccess(false)
+        }, 2000)
     }
 
     const onFilesSelected = useCallback(async (file: File | undefined) => {
@@ -1362,6 +1373,27 @@ export default function AnalyzePage() {
             >
                 {darkMode ? <Sun size={24} /> : <Moon size={24} />}
             </button>
+
+            {/* Cache Clear Modal */}
+            <CacheClearModal
+                isOpen={showCacheClearModal}
+                onClose={() => {
+                    setShowCacheClearModal(false)
+                    setShowCacheSuccess(false)
+                }}
+                onConfirm={confirmClearCache}
+                entries={cacheStats.entries}
+                size={cacheStats.size}
+                darkMode={darkMode}
+                showSuccess={showCacheSuccess}
+            />
+
+            {/* Cache Empty Modal */}
+            <CacheEmptyModal
+                isOpen={showCacheEmptyModal}
+                onClose={() => setShowCacheEmptyModal(false)}
+                darkMode={darkMode}
+            />
         </div>
     )
 }
