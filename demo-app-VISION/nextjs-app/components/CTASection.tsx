@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { Mail, Github, Heart, Code } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import ContactModal from './ContactModal'
 
 interface CTASectionProps {
@@ -108,18 +109,68 @@ export default function CTASection({ darkMode }: CTASectionProps) {
                             </p>
                         </div>
                         <div className="flex flex-wrap justify-center gap-3">
-                            {['Next.js', 'React', 'Ollama', 'Tailwind CSS'].map((tech, index) => (
-                                <span
-                                    key={index}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                                        darkMode
-                                            ? 'bg-slate-700/50 text-gray-300'
-                                            : 'bg-white border border-gray-200 text-gray-700'
-                                    }`}
-                                >
-                                    {tech}
-                                </span>
-                            ))}
+                            <span
+                                className={`p-3 rounded-lg transition-all hover:scale-110 ${
+                                    darkMode
+                                        ? 'bg-slate-700/50 hover:bg-slate-700'
+                                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                                }`}
+                                title="Next.js"
+                            >
+                                <Image 
+                                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" 
+                                    alt="Next.js"
+                                    width={28}
+                                    height={28}
+                                    className={darkMode ? 'invert' : ''}
+                                />
+                            </span>
+                            <span
+                                className={`p-3 rounded-lg transition-all hover:scale-110 ${
+                                    darkMode
+                                        ? 'bg-slate-700/50 hover:bg-slate-700'
+                                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                                }`}
+                                title="React"
+                            >
+                                <Image 
+                                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" 
+                                    alt="React"
+                                    width={28}
+                                    height={28}
+                                />
+                            </span>
+                            <span
+                                className={`p-3 rounded-lg transition-all hover:scale-110 ${
+                                    darkMode
+                                        ? 'bg-slate-700/50 hover:bg-slate-700'
+                                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                                }`}
+                                title="Ollama"
+                            >
+                                <Image 
+                                    src="https://avatars.githubusercontent.com/u/151674099?s=200&v=4" 
+                                    alt="Ollama"
+                                    width={28}
+                                    height={28}
+                                    className="rounded"
+                                />
+                            </span>
+                            <span
+                                className={`p-3 rounded-lg transition-all hover:scale-110 ${
+                                    darkMode
+                                        ? 'bg-slate-700/50 hover:bg-slate-700'
+                                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                                }`}
+                                title="Tailwind CSS"
+                            >
+                                <Image 
+                                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" 
+                                    alt="Tailwind CSS"
+                                    width={28}
+                                    height={28}
+                                />
+                            </span>
                         </div>
                     </motion.div>
 
