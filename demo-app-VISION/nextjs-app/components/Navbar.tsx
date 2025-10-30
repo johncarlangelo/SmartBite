@@ -41,14 +41,14 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
             <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4">
                 <div className="flex justify-between items-center">
                     {/* Logo */}
-                    <Link href="/" className={`text-2xl sm:text-3xl font-bold flex items-center gap-3 ${
+                    <Link href="/" className={`text-2xl sm:text-5xl font-bold flex items-center gap-3 ${
                         darkMode ? 'text-white' : 'text-gray-900'
                     } hover:opacity-80 transition-opacity`}>
                         <Image 
-                            src="/images/smartbite-logo.png" 
+                            src={darkMode ? "/images/smartbite-logo.png" : "/images/logo2.png"}
                             alt="SmartBite Logo" 
-                            width={50} 
-                            height={50}
+                            width={100} 
+                            height={100}
                             className="rounded-full"
                         />
                         <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SmartBite</span>
@@ -62,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
                         <li>
                             <button
                                 onClick={toggleOnlineStatus}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all cursor-pointer hover:scale-105 ${
+                                className={`flex items-center gap-2 px-8 py-4 rounded-full border-2 transition-all cursor-pointer hover:scale-105 ${
                                     isOnline
                                         ? darkMode
                                             ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
                                 <span className={`w-2 h-2 rounded-full ${
                                     isOnline ? 'bg-green-500 animate-pulse' : 'bg-orange-500'
                                 }`}></span>
-                                <span className="text-sm font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
+                                <span className="text-lg font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
                             </button>
                         </li>
                     </ul>
@@ -97,7 +97,13 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
                 {/* Mobile Menu */}
                 {isMenuOpen && (
                     <div className="md:hidden mt-4 pb-4 space-y-3">
-                        <div className={`flex flex-col gap-2 pt-3 ${
+                        <div className={`flex flex-col gap-3 font-medium ${
+                            darkMode ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                            <Link href="/" className="hover:text-blue-400 transition-colors py-2">Home</Link>
+                            <Link href="/analyze" className="hover:text-blue-400 transition-colors py-2">Analyze</Link>
+                        </div>
+                        <div className={`flex flex-col gap-2 pt-3 border-t ${
                             darkMode ? 'border-slate-700' : 'border-gray-200'
                         }`}>
                             <button className={`border px-5 py-2.5 rounded-xl transition-all font-medium w-full ${

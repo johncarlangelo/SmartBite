@@ -89,14 +89,14 @@ export default function HistoryModal({
       {/* History Button */}
       <button
         onClick={handleOpen}
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+        className={`flex items-center gap-2 px-6 py-2 rounded-xl transition-all ${
           darkMode
             ? 'bg-slate-800 hover:bg-slate-700 text-white'
             : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
         }`}
       >
         <History size={18} />
-        <span className="text-sm font-medium hidden sm:inline">History</span>
+        <span className="text-lg font-medium hidden sm:inline">History</span>
       </button>
 
       {/* Modal */}

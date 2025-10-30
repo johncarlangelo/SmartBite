@@ -686,21 +686,21 @@ export default function AnalyzePage() {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleBackToHome}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover:scale-105 cursor-pointer ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                                className={`flex items-center gap-2 px-6 py-2 rounded-xl transition-all hover:scale-105 cursor-pointer ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
                             >
                                 <ArrowLeft size={20} />
-                                <span className="font-medium">Back</span>
+                                <span className="font-medium text-lg">Back</span>
                             </button>
                             <div className="flex items-center">
                                 <Image 
-                                    src="/images/smartbite-logo.png" 
+                                    src={darkMode ? "/images/smartbite-logo.png" : "/images/logo2.png"}
                                     alt="SmartBite Logo" 
-                                    width={60} 
-                                    height={60}
+                                    width={100} 
+                                    height={100}
                                     className="rounded-full"
                                 />
-                                <h1 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    Smart<span className={darkMode ? 'text-blue-400' : 'text-blue-600'}>Bite</span>
+                                <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                                    SmartBite
                                 </h1>
                             </div>
                         </div>
@@ -720,14 +720,14 @@ export default function AnalyzePage() {
 
                             <button
                                 onClick={handleClearCache}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${darkMode
+                                className={`flex items-center gap-2 px-6 py-2 rounded-xl transition-all ${darkMode
                                         ? 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30'
                                         : 'bg-purple-100 hover:bg-purple-200 text-purple-600 border border-purple-200'
                                     }`}
                                 title="Clear image cache to free up storage"
                             >
                                 <Database size={18} />
-                                <span className="text-sm font-medium hidden lg:inline">Cache</span>
+                                <span className="text-lg font-medium hidden lg:inline">Cache</span>
                             </button>
 
                             <button
@@ -738,7 +738,7 @@ export default function AnalyzePage() {
                                     localStorage.setItem('onlineStatus', String(newOnlineState));
                                     window.dispatchEvent(new CustomEvent('onlineStatusChanged', { detail: newOnlineState }));
                                 }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all cursor-pointer hover:scale-105 ${
+                                className={`flex items-center gap-2 px-6 py-2 rounded-full border-2 transition-all cursor-pointer hover:scale-105 ${
                                     offline
                                         ? darkMode
                                             ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 hover:bg-orange-500/30'
@@ -751,7 +751,7 @@ export default function AnalyzePage() {
                                 <span className={`w-2 h-2 rounded-full ${
                                     offline ? 'bg-orange-500' : 'bg-green-500 animate-pulse'
                                 }`}></span>
-                                <span className="text-sm font-semibold">
+                                <span className="text-lg font-semibold">
                                     {offline ? 'Offline' : 'Online'}
                                 </span>
                             </button>
