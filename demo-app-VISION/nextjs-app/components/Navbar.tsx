@@ -58,9 +58,6 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
                     <ul className={`hidden md:flex gap-8 font-medium items-center ${
                         darkMode ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                        <li><Link href="/" className="cursor-pointer hover:text-blue-400 transition-colors">Home</Link></li>
-                        <li><Link href="/analyze" className="cursor-pointer hover:text-blue-400 transition-colors">Analyze</Link></li>
-                        
                         {/* Connection Status Badge - Clickable */}
                         <li>
                             <button
@@ -100,13 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
                 {/* Mobile Menu */}
                 {isMenuOpen && (
                     <div className="md:hidden mt-4 pb-4 space-y-3">
-                        <div className={`flex flex-col gap-3 font-medium ${
-                            darkMode ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                            <Link href="/" className="hover:text-blue-400 transition-colors py-2">Home</Link>
-                            <Link href="/analyze" className="hover:text-blue-400 transition-colors py-2">Analyze</Link>
-                        </div>
-                        <div className={`flex flex-col gap-2 pt-3 border-t ${
+                        <div className={`flex flex-col gap-2 pt-3 ${
                             darkMode ? 'border-slate-700' : 'border-gray-200'
                         }`}>
                             <button className={`border px-5 py-2.5 rounded-xl transition-all font-medium w-full ${

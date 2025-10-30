@@ -4,15 +4,18 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import HeroSection from '@/components/HeroSection'
 import OverviewSection from '@/components/OverviewSection'
+import CTASection from '@/components/CTASection'
 import AnimatedBackground from '@/components/AnimatedBackground'
 import { Moon, Sun } from 'lucide-react'
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
 
   // Load dark mode preference from localStorage
   useEffect(() => {
+    setIsMounted(true)
     const savedMode = localStorage.getItem('darkMode')
     if (savedMode !== null) {
       setDarkMode(savedMode === 'true')
@@ -46,25 +49,14 @@ export default function Home() {
     <main className={`min-h-screen transition-colors duration-300 relative overflow-hidden ${
       darkMode ? 'bg-slate-900' : 'bg-white'
     }`}>
-      {/* Animated Background Blobs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
-        <div className={`absolute top-10 left-10 w-[500px] h-[500px] rounded-full blur-3xl opacity-40 animate-blob ${
-          darkMode ? 'bg-blue-600' : 'bg-blue-400'
-        }`}></div>
-        <div className={`absolute top-10 right-10 w-[450px] h-[450px] rounded-full blur-3xl opacity-40 animate-blob animation-delay-2000 ${
-          darkMode ? 'bg-violet-600' : 'bg-violet-400'
-        }`}></div>
-        <div className={`absolute bottom-10 left-1/4 w-[520px] h-[520px] rounded-full blur-3xl opacity-40 animate-blob animation-delay-4000 ${
-          darkMode ? 'bg-indigo-600' : 'bg-indigo-400'
-        }`}></div>
-        <div className={`absolute bottom-10 right-1/4 w-[480px] h-[480px] rounded-full blur-3xl opacity-40 animate-blob animation-delay-6000 ${
-          darkMode ? 'bg-cyan-600' : 'bg-cyan-400'
-        }`}></div>
-      </div>
-
       <Navbar darkMode={darkMode} isOnline={isOnline} />
-      <HeroSection darkMode={darkMode} />
-      <OverviewSection darkMode={darkMode} />
+      {isMounted && (
+        <>
+          <HeroSection darkMode={darkMode} />
+          <OverviewSection darkMode={darkMode} />
+          <CTASection darkMode={darkMode} />
+        </>
+      )}
       
       {/* Dark Mode Toggle Button */}
       <button

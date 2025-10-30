@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Camera, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -10,25 +10,35 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        // Start animations immediately
+        setIsReady(true);
+    }, []);
+
     return (
         <section className="relative overflow-hidden">
             {/* Decorative Background Elements */}
             <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
+            
+            {/* Radial Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-radial from-blue-500/10 via-transparent to-transparent"></div>
 
             <div className="relative max-w-7xl mx-auto px-6 sm:px-8 py-16 sm:py-24 lg:py-32">
                 <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
                     {/* Left Content */}
                     <motion.div 
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
+                        initial={false}
+                        animate={isReady ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
                         className="w-full lg:w-1/2 text-center lg:text-left space-y-6"
                     >
                         {/* Badge */}
                         <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.5 }}
+                            initial={false}
+                            animate={isReady ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+                            transition={{ delay: 0.1, duration: 0.3, ease: "easeOut" }}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 backdrop-blur-xl"
                         >
                             <Sparkles size={16} className="text-blue-400" />
@@ -37,9 +47,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                         {/* Hero Title */}
                         <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.6 }}
+                            initial={false}
+                            animate={isReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                            transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
                             className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight ${
                                 darkMode ? 'text-white' : 'text-gray-900'
                             }`}
@@ -52,9 +62,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                         {/* Description */}
                         <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4, duration: 0.6 }}
+                            initial={false}
+                            animate={isReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                            transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
                             className={`text-lg sm:text-xl max-w-2xl mx-auto lg:mx-0 ${
                                 darkMode ? 'text-gray-400' : 'text-gray-600'
                             }`}
@@ -64,9 +74,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                         {/* CTA Button */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5, duration: 0.6 }}
+                            initial={false}
+                            animate={isReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                            transition={{ delay: 0.25, duration: 0.4, ease: "easeOut" }}
                             className="flex items-center justify-center lg:justify-start pt-4"
                         >
                             <Link href="/analyze" className="group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all flex items-center justify-center gap-2">
@@ -79,17 +89,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                     {/* Right Image */}
                     <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
+                        initial={false}
+                        animate={isReady ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+                        transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
                         className="w-full lg:w-1/2 flex justify-center"
                     >
                         <div className="relative">
                             {/* Main Image Card */}
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.5, duration: 0.6 }}
+                                initial={false}
+                                animate={isReady ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+                                transition={{ delay: 0.25, duration: 0.4, ease: "easeOut" }}
                                 className="relative backdrop-blur-xl bg-slate-800/50 rounded-3xl p-6 border border-slate-700/50 shadow-2xl"
                             >
                                 <div className="relative overflow-hidden rounded-2xl">
@@ -104,9 +114,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                                 {/* Floating Info Card */}
                                 <motion.div
-                                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ delay: 0.8, duration: 0.5 }}
+                                    initial={false}
+                                    animate={isReady ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 10, scale: 0.9 }}
+                                    transition={{ delay: 0.4, duration: 0.3, ease: "easeOut" }}
                                     className="absolute -bottom-4 -right-4 backdrop-blur-xl bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl"
                                 >
                                     <div className="flex items-center gap-3">
@@ -123,9 +133,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode = true }) => {
 
                             {/* Floating Badge */}
                             <motion.div
-                                initial={{ opacity: 0, y: -20, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ delay: 0.9, duration: 0.5 }}
+                                initial={false}
+                                animate={isReady ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -10, scale: 0.9 }}
+                                transition={{ delay: 0.45, duration: 0.3, ease: "easeOut" }}
                                 className="absolute -top-4 -left-4 backdrop-blur-xl bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2 shadow-lg"
                             >
                                 <span className="text-green-400 font-semibold text-sm">✓ Verified Fresh</span>
