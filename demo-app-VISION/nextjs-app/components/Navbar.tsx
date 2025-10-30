@@ -3,6 +3,7 @@
 import React from "react";
 import { Camera, Menu, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NavbarProps {
     darkMode?: boolean
@@ -40,11 +41,18 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode = true }) => {
             <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4">
                 <div className="flex justify-between items-center">
                     {/* Logo */}
-                    <div className={`text-2xl sm:text-3xl font-bold flex items-center gap-2 ${
+                    <Link href="/" className={`text-2xl sm:text-3xl font-bold flex items-center gap-3 ${
                         darkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
-                        🍽️ <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SmartBite</span>
-                    </div>
+                    } hover:opacity-80 transition-opacity`}>
+                        <Image 
+                            src="/images/smartbite-logo.png" 
+                            alt="SmartBite Logo" 
+                            width={50} 
+                            height={50}
+                            className="rounded-full"
+                        />
+                        <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SmartBite</span>
+                    </Link>
 
                     {/* Desktop Navigation */}
                     <ul className={`hidden md:flex gap-8 font-medium items-center ${

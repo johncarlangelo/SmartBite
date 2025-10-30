@@ -8,7 +8,17 @@ export const metadata: Metadata = {
   title: 'SmartBite',
   description: 'Identify dishes, ingredients, nutrition and recipes from a photo',
   icons: {
-    icon: '/images/diet.png',
+    icon: [
+      { url: '/images/smartbite-logo.png', sizes: '64x64', type: 'image/png' },
+      { url: '/images/smartbite-logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/smartbite-logo.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/images/smartbite-logo.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: [
+      { url: '/images/smartbite-logo.png', sizes: '64x64', type: 'image/png' },
+    ],
   },
 }
 

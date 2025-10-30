@@ -5,6 +5,7 @@ import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, S
 import { motion, useInView } from 'motion/react'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
+import Image from 'next/image'
 import AnimatedList from '@/components/AnimatedList'
 import AIRecommendations from '@/components/AIRecommendations'
 import HistoryModal from '@/components/HistoryModal'
@@ -673,11 +674,15 @@ export default function AnalyzePage() {
                                 <ArrowLeft size={20} />
                                 <span className="font-medium">Back</span>
                             </Link>
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-xl ${darkMode ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'}`}>
-                                    <Salad className="text-white" size={24} />
-                                </div>
-                                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <div className="flex items-center">
+                                <Image 
+                                    src="/images/smartbite-logo.png" 
+                                    alt="SmartBite Logo" 
+                                    width={60} 
+                                    height={60}
+                                    className="rounded-full"
+                                />
+                                <h1 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     Smart<span className={darkMode ? 'text-blue-400' : 'text-blue-600'}>Bite</span>
                                 </h1>
                             </div>
