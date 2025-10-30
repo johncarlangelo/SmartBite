@@ -1028,7 +1028,7 @@ export default function AnalyzePage() {
                                             <Gauge className={darkMode ? 'text-green-400' : 'text-green-600'} size={28} />
                                             Nutrition Facts
                                         </h3>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center -mt-20">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                                             {/* Left side - Nutrition values */}
                                             <div className="space-y-3">
                                                 {[
@@ -1060,11 +1060,11 @@ export default function AnalyzePage() {
                                                 initial={{ opacity: 0, scale: 0.8 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ delay: 0.4, duration: 0.5 }}
-                                                className="flex flex-col items-center justify-center"
+                                                className="flex flex-col items-center justify-center w-full"
                                             >
                                                 {/* Pie Chart with Labels */}
-                                                <div className="relative w-[500px] h-[500px]">
-                                                    <svg viewBox="0 0 500 500" className="transform -rotate-90">
+                                                <div className="relative w-full max-w-[340px] aspect-square mx-auto">
+                                                    <svg viewBox="0 0 500 500" className="transform -rotate-90 w-full h-full">
                                                         {(() => {
                                                             const total = result.nutrition.protein_g + result.nutrition.carbs_g + result.nutrition.fat_g;
                                                             let currentAngle = 0;
@@ -1116,7 +1116,9 @@ export default function AnalyzePage() {
                                                                                 x={labelX}
                                                                                 y={labelY - 2}
                                                                                 textAnchor="middle"
-                                                                                className={`text-sm font-bold ${darkMode ? 'fill-white' : 'fill-gray-900'}`}
+                                                                                fontSize="16"
+                                                                                fontWeight="bold"
+                                                                                className={darkMode ? 'fill-white' : 'fill-gray-900'}
                                                                                 initial={{ opacity: 0 }}
                                                                                 animate={{ opacity: 1 }}
                                                                                 transition={{ delay: 0.7 + index * 0.1, duration: 0.3 }}
@@ -1127,7 +1129,8 @@ export default function AnalyzePage() {
                                                                                 x={labelX}
                                                                                 y={labelY + 14}
                                                                                 textAnchor="middle"
-                                                                                className={`text-xs font-semibold`}
+                                                                                fontSize="13"
+                                                                                fontWeight="600"
                                                                                 fill={colors[index]}
                                                                                 initial={{ opacity: 0 }}
                                                                                 animate={{ opacity: 1 }}
@@ -1141,15 +1144,16 @@ export default function AnalyzePage() {
                                                             });
                                                         })()}
                                                     </svg>
-                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
+                                                    {/* Center Circle - Responsive sizing */}
+                                                    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[48%] aspect-square rounded-full ${darkMode ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center border-4 ${darkMode ? 'border-slate-800' : 'border-gray-100'} shadow-lg`}>
                                                         <div className="text-center">
-                                                            <p className={`text-3xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                            <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                                                                 {result.nutrition.calories}
                                                             </p>
-                                                            <p className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                            <p className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                                                                 kcal
                                                             </p>
-                                                            <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                            <p className={`text-xs sm:text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                                                 Calories
                                                             </p>
                                                         </div>
