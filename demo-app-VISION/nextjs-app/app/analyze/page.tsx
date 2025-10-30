@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { Camera, Upload, Eye, Salad, Gauge, ChefHat, WifiOff, Wifi, Moon, Sun, Save, History, Trash2, X, Clock, ArrowLeft, Star, Database, Search, Youtube, ExternalLink } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
+import { useRouter } from 'next/navigation'
 import GridMotion from '@/components/GridMotion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -68,6 +69,7 @@ type SavedAnalysis = AnalysisResult & {
 
 
 export default function AnalyzePage() {
+    const router = useRouter()
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
     const [fileObj, setFileObj] = useState<File | null>(null)
     const [result, setResult] = useState<AnalysisResult | null>(null)
@@ -188,6 +190,10 @@ export default function AnalyzePage() {
         const newTheme = !darkMode
         setDarkMode(newTheme)
         localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    }
+
+    const handleBackToHome = () => {
+        router.push('/')
     }
 
     const handleClearCache = () => {
@@ -674,17 +680,17 @@ export default function AnalyzePage() {
             </div>
 
             {/* Header */}
-            <header className={`sticky top-0 z-50 backdrop-blur-xl ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-gray-200'} border-b transition-colors`}>
+            <header className={`sticky top-0 z-[100] backdrop-blur-xl ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-gray-200'} border-b transition-colors`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link
-                                href="/"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
+                            <button
+                                onClick={handleBackToHome}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover:scale-105 cursor-pointer ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
                             >
                                 <ArrowLeft size={20} />
                                 <span className="font-medium">Back</span>
-                            </Link>
+                            </button>
                             <div className="flex items-center">
                                 <Image 
                                     src="/images/smartbite-logo.png" 
