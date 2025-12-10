@@ -40,4 +40,4 @@ Open `http://localhost:3000` and upload an image of a dish.
 - **Offline Support**: Works completely offline with local Ollama models
 - **Smart Caching**: Duplicate detection and instant cache results
 
-
+© Hermanos 2025 - For Hermanos. By Hermanos
